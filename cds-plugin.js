@@ -10,6 +10,8 @@ cds.on("bootstrap", async (app) => {
   const { mountUi, mountIndex } = await import("./lib/mount.mjs")
 
   const config = resolveConfig(cds.env)
+  for (const warning of config.warnings) LOG.warn(warning)
+
   if (!config.enabled) {
     LOG.info("cap-agent-ui5-webui: disabled by configuration")
     return
