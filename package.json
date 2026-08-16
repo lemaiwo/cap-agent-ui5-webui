@@ -23,6 +23,7 @@
     "test:unit": "node --import tsx --test test/unit/sse.test.ts test/unit/chatState.test.ts test/unit/A2AClient.test.ts",
     "test:service": "node --test test/service/catalog.test.js",
     "test": "npm run test:unit && npm run test:service",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit -p app/chat/tsconfig.json"
   }
 }

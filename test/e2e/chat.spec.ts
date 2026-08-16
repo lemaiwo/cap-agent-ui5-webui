@@ -92,6 +92,17 @@ test("rejecting an order leaves stock untouched", async ({ page, request }) => {
   expect(await stockOf(request, REJECT_BOOK)).toBe(before)
 })
 
+test("agent card reflects the Phase B markdown-defined agent, not Phase A auto-agentification", async ({
+  request,
+}) => {
+  const res = await request.get("/a2a/catalog/.well-known/agent-card.json")
+  expect(res.ok()).toBeTruthy()
+  const card = (await res.json()) as { name: string; skills: Array<{ id?: string; name?: string }> }
+
+  expect(card.name).toBe("catalog-agent")
+  expect(card.skills.some((s) => s.id === "book-purchase" || s.name === "book-purchase")).toBe(true)
+})
+
 test("an over-long message surfaces an error instead of wedging the UI", async ({ page }) => {
   await page.goto(APP_URL)
 
