@@ -1,0 +1,18 @@
+{
+  "name": "cap-agent-ui",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@cap-js/agents": "0.9.1",
+    "@cap-js/sqlite": "^3",
+    "@sap/cds": "^10"
+  },
+  "devDependencies": {
+    "@cap-js/cds-test": "^1"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "test:service": "node --test test/service/catalog.test.js",
+    "test": "npm run test:service"
+  }
+}
