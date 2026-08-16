@@ -1,4 +1,4 @@
-# cap-agent-ui
+# cap-agent-ui5-webui
 
 A [SAP CAP](https://cap.cloud.sap/) bookshop service that exposes an
 [A2A protocol](https://a2a-protocol.org/) agent via [`@cap-js/agents`](https://www.npmjs.com/package/@cap-js/agents)
