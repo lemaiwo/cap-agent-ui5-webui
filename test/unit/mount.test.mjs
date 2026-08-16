@@ -36,6 +36,10 @@ function fakeRes() {
     send(body) {
       this.body = body
     },
+    redirect(status, location) {
+      this.redirectStatus = status
+      this.redirectedTo = location
+    },
   }
 }
 
@@ -109,14 +113,55 @@ test("the override actually substitutes the bootstrap URL in the served html", (
     const log = fakeLog()
     mountIndex(app, "/chat", OVERRIDE, log, dist)
 
-    for (const { handler } of app.calls) {
+    // The bare mount path only serves when the request has a trailing slash
+    // (it redirects otherwise — see the dedicated tests below), so simulate
+    // that here to exercise both registered handlers' actual serving behaviour.
+    const reqFor = (path) => (path === "/chat" ? { originalUrl: "/chat/" } : {})
+
+    for (const { path, handler } of app.calls) {
       const res = fakeRes()
-      handler({}, res)
+      handler(reqFor(path), res)
       assert.match(res.body, new RegExp(OVERRIDE.replaceAll(/[/.]/g, "\\$&")))
       assert.equal(res.body.includes(DEFAULT_BOOTSTRAP), false)
       assert.equal(res.headers["Content-Type"], "text/html; charset=utf-8")
     }
     assert.match(log.infos.join("\n"), /bootstrap overridden to https:\/\/ui5\.internal\.example/)
+  })
+})
+
+// I1: express.static would 301-redirect a bare "/chat" to "/chat/" so the
+// served page's document base ends up under the mount path. Registering
+// `app.get(mountPath, send)` unconditionally pre-empts that redirect, so
+// every relative reference in the page (UI5 resource roots, `fetch("agents.json")`)
+// resolves against the server root instead — a blank page. The handler must
+// reproduce express.static's redirect itself.
+test("the bare mount path redirects without a trailing slash but serves with one", () => {
+  withDist({ "index.html": INDEX_WITH_DEFAULT }, (dist) => {
+    const app = fakeApp()
+    const log = fakeLog()
+    mountIndex(app, "/chat", OVERRIDE, log, dist)
+
+    const bareCall = app.calls.find((c) => c.path === "/chat")
+    assert.ok(bareCall, "expected a handler registered for the bare mount path")
+
+    // GET /chat -> 301 to /chat/, not served directly.
+    const redirectRes = fakeRes()
+    bareCall.handler({ originalUrl: "/chat" }, redirectRes)
+    assert.equal(redirectRes.redirectStatus, 301)
+    assert.equal(redirectRes.redirectedTo, "/chat/")
+    assert.equal(redirectRes.body, undefined)
+
+    // GET /chat/ -> same Express route (strict routing is off by default), but
+    // this time served directly rather than redirected.
+    const serveRes = fakeRes()
+    bareCall.handler({ originalUrl: "/chat/" }, serveRes)
+    assert.equal(serveRes.redirectedTo, undefined)
+    assert.match(serveRes.body, new RegExp(OVERRIDE.replaceAll(/[/.]/g, "\\$&")))
+
+    // A query string must not defeat the trailing-slash check.
+    const serveWithQueryRes = fakeRes()
+    bareCall.handler({ originalUrl: "/chat/?debug=1" }, serveWithQueryRes)
+    assert.match(serveWithQueryRes.body, new RegExp(OVERRIDE.replaceAll(/[/.]/g, "\\$&")))
   })
 })
 

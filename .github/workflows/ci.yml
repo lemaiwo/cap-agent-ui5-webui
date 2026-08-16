@@ -34,7 +34,13 @@ jobs:
         run: |
           test -n "$(git ls-files dist)" || { echo "dist/ is not tracked — check .gitignore"; exit 1; }
           npm run build
-          git diff --exit-code -- dist || { echo "dist/ is stale — run npm run build and commit"; exit 1; }
+          # `git diff` alone only reports changes to already-tracked files, so a
+          # build emitting a brand-new file under dist/ (a new controller, view,
+          # or asset) would leave it untracked and this check would pass anyway,
+          # silently shipping a package missing that file. `git add -A` first
+          # stages new/deleted files too, so the diff below sees everything.
+          git add -A -- dist
+          git diff --cached --exit-code -- dist || { echo "dist/ is stale — run npm run build and commit"; exit 1; }
 
       # The repo uses npm workspaces, so every test above resolves the plugin
       # through the hoisted root node_modules tree — never through what "npm pack"

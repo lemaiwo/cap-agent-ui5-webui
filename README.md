@@ -147,9 +147,13 @@ The plugin serves static files with `express.static` — no UI5 Tooling, no
 transpilation, and no framework download at runtime. The same code path runs under
 `cds watch` and on Cloud Foundry.
 
-Because the UI is served same-origin from your CDS server, it inherits your app's own
-XSUAA session — there is **no approuter and no HTML5 Application Repository to set up**.
-If your CAP project already authenticates with XSUAA, the chat UI is already behind it.
+Because the UI is served same-origin from your CDS server, requests it makes to your
+agent carry the host's own session, so the agent stays protected exactly as it was —
+there is **no approuter and no HTML5 Application Repository to set up**. Note that the
+static assets and `<mountPath>/agents.json` are served ahead of CAP's auth middleware
+(the plugin registers its routes on the raw Express `app` at bootstrap, before `cds.serve`
+mounts service-level auth) and are readable without a session — `agents.json` in
+particular enumerates your agent services' names, descriptions and mounted paths.
 
 ## `dist/` ships TypeScript sources — deliberately
 

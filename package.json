@@ -8,6 +8,7 @@
     "cds-plugin.js",
     "lib",
     "dist",
+    "docs",
     "test-support",
     "README.md"
   ],

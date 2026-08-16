@@ -29,6 +29,7 @@ const requiredFiles = [
   "lib/discover.mjs",
   "lib/mount.mjs",
   "test-support/scripted-llm.mjs",
+  "docs/templates/AGENTS.md.template",
 ]
 
 // Subpaths a consumer imports by name, resolved through the package's "exports"

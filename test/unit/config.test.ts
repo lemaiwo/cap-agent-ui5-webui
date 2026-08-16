@@ -47,6 +47,47 @@ test("an empty mountPath is refused the same way", () => {
   assert.equal(c.warnings.length, 1)
 })
 
+// A trailing slash produces routes like "/chat//agents.json", which nothing
+// matches — the UI loads but every fetch under the mount path 404s silently
+// (loadAgents swallows the failure), leaving a chat box that talks to nothing
+// with no warning at all. It must be stripped, not merely tolerated.
+test("a trailing slash on mountPath is stripped", () => {
+  const c = resolveConfig({ "cap-agent-ui5-webui": { mountPath: "/chat/" } })
+  assert.equal(c.mountPath, "/chat")
+  assert.deepEqual(c.warnings, [])
+})
+
+test("a mountPath of only slashes collapses to the root case and is refused", () => {
+  const c = resolveConfig({ "cap-agent-ui5-webui": { mountPath: "//" } })
+  assert.equal(c.mountPath, "/chat")
+  assert.equal(c.warnings.length, 1)
+  assert.match(c.warnings[0], /mountPath "\/" is not available/)
+})
+
+test("a trailing slash combines correctly with a missing leading slash", () => {
+  const c = resolveConfig({ "cap-agent-ui5-webui": { mountPath: "chat/" } })
+  assert.equal(c.mountPath, "/chat")
+  assert.deepEqual(c.warnings, [])
+})
+
+// An unrecognised key (e.g. a typo like "mountpath") was previously spread
+// into the merged config and silently ignored — a consumer's override would
+// do nothing, with no signal anywhere that anything was wrong.
+test("an unknown config key produces a warning but does not throw", () => {
+  const c = resolveConfig({ "cap-agent-ui5-webui": { mountpath: "/assistant" } })
+  assert.equal(c.mountPath, "/chat")
+  assert.equal(c.warnings.length, 1)
+  assert.match(c.warnings[0], /unknown config key\(s\) ignored/)
+  assert.match(c.warnings[0], /mountpath/)
+})
+
+test("multiple unknown config keys are named together in one warning", () => {
+  const c = resolveConfig({ "cap-agent-ui5-webui": { mountpath: "/x", foo: 1 } })
+  assert.equal(c.warnings.length, 1)
+  assert.match(c.warnings[0], /mountpath/)
+  assert.match(c.warnings[0], /foo/)
+})
+
 test("a usable config carries no warnings", () => {
   assert.deepEqual(resolveConfig({}).warnings, [])
   assert.deepEqual(resolveConfig({ "cap-agent-ui5-webui": { mountPath: "ui" } }).warnings, [])
