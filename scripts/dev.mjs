@@ -81,7 +81,9 @@ async function build(reason) {
 
 function startServer() {
   console.log("[dev] starting sample: test/fixture/bookshop (AGENT_LLM=scripted)")
-  server = spawn(npx, ["cds", "serve", "--in-memory"], {
+  // `cds-serve` is the binary @sap/cds ships; the bare `cds` CLI comes from
+  // @sap/cds-dk, which this repo does not depend on.
+  server = spawn(npx, ["cds-serve", "--in-memory"], {
     cwd: fixtureDir,
     stdio: "inherit",
     shell: isWindows,
