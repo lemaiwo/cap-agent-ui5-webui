@@ -76,11 +76,13 @@ export default class ScriptedChatModel extends BaseChatModel {
 
     const query = this._tools.find((t) => t.name === "query")
     if (query) {
-      // Try schema introspection first — it works when the tool's schema
-      // getter behaves. It can come back empty (e.g. if the getter's
-      // authorization check errors outside of an expected request context),
-      // in which case we know what our own app's `query` tool needs and can
-      // just say so, rather than giving up like the plugin's mock does.
+      // Try CQN-mode schema introspection first. This service's `query`
+      // tool is registered in CQL mode by default (@cap-js/mcp's
+      // createGenericReadToolDefinition only returns an `entity` field when
+      // cds.env.mcp.format === "cqn"; otherwise the schema is
+      // z.object({ cql: z.string() }), with no `entity` at all) — so this
+      // branch finds nothing here and the CQL fallback below is the live
+      // path. It's kept for a service configured with mcp.format: "cqn".
       const entities = query?.schema?.shape?.entity?.def?.entries
       const entity = entities && Object.keys(entities)[0]
       const args = entity ? { entity, limit: 3 } : FALLBACK_QUERY_ARGS

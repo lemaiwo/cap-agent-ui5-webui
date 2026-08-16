@@ -4,6 +4,7 @@ import { APP_URL, APPROVE_BOOK, REJECT_BOOK } from "./constants"
 
 async function stockOf(request: APIRequestContext, id: number): Promise<number> {
   const res = await request.get(`/odata/v4/catalog/Books(${id})`)
+  expect(res.ok(), `stock lookup for book ${id} failed: ${res.status()}`).toBeTruthy()
   const body = (await res.json()) as { stock: number }
   return body.stock
 }
@@ -73,7 +74,8 @@ test("rejecting an order leaves stock untouched", async ({ page, request }) => {
   const before = await stockOf(request, REJECT_BOOK)
 
   await page.goto(APP_URL)
-  await page.getByPlaceholder("Ask the catalog agent").fill(`order 1 copies of book ${REJECT_BOOK}`)
+  const input = page.getByPlaceholder("Ask the catalog agent")
+  await input.fill(`order 1 copies of book ${REJECT_BOOK}`)
   await page.getByRole("button", { name: "Send" }).click()
 
   const reject = page.getByRole("button", { name: "Reject" })
@@ -81,6 +83,11 @@ test("rejecting an order leaves stock untouched", async ({ page, request }) => {
 
   await reject.click()
   await expect(reject).toBeHidden()
+  // The button hides synchronously inside the click handler, before any
+  // network round-trip — waiting for the input to re-enable is what proves
+  // the reject exchange actually reached and finished at the server before
+  // we read stock below.
+  await expect(input).toBeEnabled()
 
   expect(await stockOf(request, REJECT_BOOK)).toBe(before)
 })
