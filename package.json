@@ -12,12 +12,14 @@
     "@sapui5/types": "^1.151.0",
     "@ui5/cli": "^4.0.62",
     "cds-plugin-ui5": "^0.17.4",
+    "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "ui5-tooling-transpile": "^3.12.0"
   },
   "scripts": {
     "start": "cds-serve",
+    "test:unit": "node --import tsx --test test/unit/sse.test.ts",
     "test:service": "node --test test/service/catalog.test.js",
-    "test": "npm run test:service"
+    "test": "npm run test:unit && npm run test:service"
   }
 }
