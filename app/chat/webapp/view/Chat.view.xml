@@ -1,0 +1,11 @@
+<mvc:View
+  controllerName="capagentui.chat.controller.Chat"
+  xmlns="sap.m"
+  xmlns:mvc="sap.ui.core.mvc"
+  displayBlock="true">
+  <Page id="page" title="{chat>/agentName}">
+    <content>
+      <Text id="bootProbe" text="Agent: {chat>/agentName}" class="sapUiSmallMargin" />
+    </content>
+  </Page>
+</mvc:View>

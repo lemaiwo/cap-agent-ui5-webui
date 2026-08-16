@@ -1,0 +1,28 @@
+{
+  "_version": "1.60.0",
+  "sap.app": {
+    "id": "capagentui.chat",
+    "type": "application",
+    "title": "Catalog Agent Chat",
+    "applicationVersion": { "version": "1.0.0" }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
+  },
+  "sap.ui5": {
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": { "sap.m": {}, "sap.ui.core": {} }
+    },
+    "rootView": {
+      "viewName": "capagentui.chat.view.Chat",
+      "type": "XML",
+      "id": "chatView",
+      "async": true
+    },
+    "config": {
+      "agentUrl": "/a2a/catalog"
+    }
+  }
+}

@@ -8,7 +8,12 @@
     "@sap/cds": "^10"
   },
   "devDependencies": {
-    "@cap-js/cds-test": "^1"
+    "@cap-js/cds-test": "^1",
+    "@sapui5/types": "^1.151.0",
+    "@ui5/cli": "^4.0.62",
+    "cds-plugin-ui5": "^0.17.4",
+    "typescript": "^7.0.2",
+    "ui5-tooling-transpile": "^3.12.0"
   },
   "scripts": {
     "start": "cds-serve",
