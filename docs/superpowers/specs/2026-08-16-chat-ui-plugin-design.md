@@ -19,7 +19,11 @@ serves a chat UI at `/chat` that talks to that project's agent, with no further 
 
 ## Non-goals
 
-- No npm registry publish yet (GitHub install only; the release story stays a later decision).
+- ~~No npm registry publish yet (GitHub install only; the release story stays a later decision).~~
+  **Superseded 2026-08-16.** The release story was decided: publishing is triggered by a
+  GitHub Release and authenticated with npm trusted publishing over OIDC — see
+  `.github/workflows/publish.yml` and the README's Releasing section. GitHub install
+  remains supported and is still what the packaging smoke test exercises.
 - No approuter, HTML5 Application Repository, or MTA descriptors — the plugin deliberately avoids needing them.
 - No Fiori Elements integration, no theming API beyond CSS variables.
 - Not a general chat framework: it speaks A2A as `@cap-js/agents` serves it, nothing else.

@@ -51,6 +51,7 @@
   },
   "scripts": {
     "build": "cd ui && ui5 build --dest ../dist --clean-dest",
+    "prepublishOnly": "npm run build",
     "dev": "node scripts/dev.mjs",
     "start:fixture": "npm start --prefix test/fixture/bookshop",
     "test:unit": "node --import tsx --test test/unit/sse.test.ts test/unit/chatState.test.ts test/unit/A2AClient.test.ts test/unit/scriptedLlm.test.mjs test/unit/config.test.ts test/unit/mount.test.mjs test/unit/discover.test.ts",
@@ -58,5 +59,13 @@
     "test": "npm run test:unit && npm run test:service",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit -p ui/tsconfig.json"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lemaiwo/cap-agent-ui5-webui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lemaiwo/cap-agent-ui5-webui/issues"
+  },
+  "homepage": "https://github.com/lemaiwo/cap-agent-ui5-webui#readme"
 }
