@@ -1,0 +1,97 @@
+name: Publish to npm
+
+# Publishing is triggered by publishing a GitHub Release, not by a push:
+# nothing reaches npm because a commit landed. Draft a release whose tag
+# matches the version in package.json, publish it, and this runs.
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Required for npm trusted publishing: npm verifies this workflow's
+      # identity via OIDC instead of a long-lived NPM_TOKEN, and attaches a
+      # provenance attestation consumers can verify.
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1; the version bundled with
+      # setup-node lags behind, so upgrade before publishing.
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
+      # Publishing is effectively irreversible (npm's unpublish window is 72h),
+      # and a tag that disagrees with package.json ships a version nobody can
+      # correlate with a release. Fail before doing anything else.
+      - name: Release tag must match package.json version
+        run: |
+          set -e
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(node -p "require('./package.json').version")
+          echo "release tag: $tag"
+          echo "package.json: $pkg"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Release tag '$tag' does not match package.json version '$pkg'."
+            echo "Bump package.json (or retag) so the two agree, then re-run."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The same gate CI runs on every push. CI has already run it on this
+      # commit, but a release is the last point at which a mistake is cheap —
+      # after publish it is a version burned on the registry.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit + fixture service tests
+        run: npm test
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      # dist/ is the published payload — a stale or partial one installs
+      # cleanly and then serves nothing. See the same step in ci.yml for why
+      # `git add -A` is needed before the diff.
+      - name: dist/ is committed and current
+        run: |
+          test -n "$(git ls-files dist)" || { echo "dist/ is not tracked — check .gitignore"; exit 1; }
+          npm run build
+          git add -A -- dist
+          git diff --cached --exit-code -- dist || { echo "dist/ is stale — run npm run build and commit"; exit 1; }
+
+      # Nothing above this line exercises what "npm pack" actually produces:
+      # the workspace layout resolves the plugin through the hoisted root tree.
+      # This is the only check that sees the real tarball a consumer installs.
+      - name: Packaging smoke test
+        run: |
+          set -e
+          pack_dir=$(mktemp -d)
+          npm pack --pack-destination "$pack_dir"
+          tarball=$(ls "$pack_dir"/*.tgz)
+
+          install_dir=$(mktemp -d)
+          cp scripts/packaging-smoke-test.mjs "$install_dir/check.mjs"
+          cd "$install_dir"
+          npm init -y >/dev/null
+          npm install "$tarball" >/dev/null
+          node check.mjs
+
+      - name: Publish
+        run: npm publish --provenance --access public

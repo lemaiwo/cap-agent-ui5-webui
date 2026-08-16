@@ -232,6 +232,37 @@ and always starts a fresh instance rather than reusing one left over from `cds w
 E2E always runs against the **built `dist/`**, never against live-transpiled TypeScript
 — that's the only way the suite proves what a real consumer actually runs.
 
+## Releasing
+
+Publishing is triggered by **publishing a GitHub Release**, never by a push — nothing
+reaches npm because a commit landed. `.github/workflows/publish.yml` re-runs the whole
+quality gate (typecheck, unit, service, E2E, the `dist/` freshness check and the packaging
+smoke test) before it publishes, because npm's unpublish window is 72 hours and a release
+is the last point at which a mistake is cheap.
+
+It authenticates with **npm trusted publishing over OIDC** — there is no `NPM_TOKEN` in
+this repository — and publishes with `--provenance`, so consumers can verify the package
+was built from this repo by this workflow.
+
+To cut a release:
+
+1. Bump `version` in `package.json`, commit, push.
+2. Draft a GitHub Release whose tag is that version, prefixed with `v` (`v0.2.0` for
+   `0.2.0`). The workflow **fails fast if the tag and `package.json` disagree** rather
+   than publishing a version nobody can correlate with a release.
+3. Publish the release. The workflow does the rest.
+
+### One-time setup before the first release
+
+Trusted publishing requires the package to already exist on npm, so the very first
+publish cannot come from this workflow:
+
+1. Publish once from your machine: `npm publish --access public`. The `prepublishOnly`
+   script builds `dist/` first, so a manual publish cannot ship stale output either.
+2. On npmjs.com, open the package's **Settings → Trusted Publisher** and add this
+   repository with workflow `publish.yml`.
+3. From then on, every release publishes itself with no token.
+
 ## Markdown agent templates
 
 `docs/templates/AGENTS.md.template` and `docs/templates/SKILL.md.template` are
