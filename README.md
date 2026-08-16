@@ -174,16 +174,44 @@ allow-list at a reverse proxy), filter them there — the plugin does not.
 ## Developing this plugin
 
 This repository is itself the plugin (the root `package.json` is the published
-package), plus a test fixture that consumes it.
+package), plus a sample CAP project that consumes it.
+
+### Running the sample
+
+```bash
+npm run dev
+```
+
+That is the loop to use while changing anything in this repo. It builds `ui/` into
+`dist/`, starts the sample project at **<http://localhost:4004/chat/index.html>**, and
+rebuilds automatically whenever you edit anything under `ui/webapp`. A rebuild needs no
+server restart — `express.static` reads from disk per request, so refreshing the browser
+is enough.
+
+It starts the sample with **`AGENT_LLM=scripted`**, which matters: under the LLM that
+`@cap-js/agents` ships by default, the agent ignores your prompt and can only ever call
+the read tool, so the Approve/Reject flow is unreachable. With the scripted model, try
+`show me all books` and then `order 1 copies of book 2` to see the approval gate.
+
+`npm run dev` deliberately serves the built `dist/`, the same path consumers and the E2E
+suite use, rather than transpiling `ui/` sources on the fly. That costs a few seconds per
+rebuild and buys fidelity: a `Component.ts` bootstrap bug once hid from every check in
+this repo precisely because nothing had loaded the built output in a browser.
+
+### Other commands
 
 - **`npm run build`** — runs the UI5 build (`ui5-tooling-transpile-task`) from `ui/`
-  into `dist/`. Run this after any change under `ui/`.
+  into `dist/`. `npm run dev` does this for you; run it by hand before committing a
+  `ui/` change.
 - **`dist/` is committed to git**, deliberately (see `.gitignore`) — a git-install
   consumer runs no build step of its own, so the built output has to already be there.
   This means you must run `npm run build` and commit the result before pushing any
   `ui/` change; CI checks that `dist/` matches a fresh build.
-- **`test/fixture/bookshop/`** is a small CAP project that depends on the plugin via
-  `file:../../..` and stands in for a real consumer for the service and E2E tests. Its
+- **`test/fixture/bookshop/`** is the sample, and also the test fixture. It is a small
+  CAP project that depends on the plugin via `file:../../..` exactly as a real consumer
+  would, and it defines two `@agent` services so the agent picker is exercised. Sample
+  and fixture are deliberately the same app: a separate sample would not be run by any
+  test and would rot silently. Its
   `srv/catalog-agent/AGENTS.md` and `srv/catalog-agent/skills/book-purchase/SKILL.md`
   are also a working example of the markdown agent templates below (see
   [`docs/agent-phases.md`](./docs/agent-phases.md) for how the two agent-definition
