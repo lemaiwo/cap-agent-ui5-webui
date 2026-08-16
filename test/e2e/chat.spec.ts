@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test"
 import type { APIRequestContext } from "@playwright/test"
-import { APP_URL, APPROVE_BOOK, REJECT_BOOK } from "./constants"
+import { APP_URL, seedBooks } from "./constants"
 
 async function stockOf(request: APIRequestContext, id: number): Promise<number> {
   const res = await request.get(`/odata/v4/catalog/Books(${id})`)
@@ -9,7 +9,9 @@ async function stockOf(request: APIRequestContext, id: number): Promise<number> 
   return body.stock
 }
 
-test("streams a reply containing real data from the database", async ({ page }) => {
+test("streams a reply containing real data from the database", async ({ page, request }) => {
+  const [first] = await seedBooks(request)
+
   await page.goto(APP_URL)
 
   const input = page.getByPlaceholder("Ask the catalog agent")
@@ -18,11 +20,15 @@ test("streams a reply containing real data from the database", async ({ page }) 
   await input.fill("show me all books")
   await page.getByRole("button", { name: "Send" }).click()
 
-  await expect(page.getByText("Wuthering Heights")).toBeVisible()
+  // Asserts the chat reply contains what OData independently returned —
+  // two surfaces cross-checked, where a hardcoded title only checked itself.
+  await expect(page.getByText(first.title)).toBeVisible()
   await expect(input).toBeEnabled()
 })
 
-test("reuses the contextId on a follow-up message", async ({ page }) => {
+test("reuses the contextId on a follow-up message", async ({ page, request }) => {
+  const [first] = await seedBooks(request)
+
   // Ruling 7: observe the POST body passively instead of page.route(...) +
   // route.continue(). The response is a long-lived SSE stream, and an
   // interception layer can buffer or break streaming; page.on only observes.
@@ -39,7 +45,7 @@ test("reuses the contextId on a follow-up message", async ({ page }) => {
 
   await input.fill("show me all books")
   await send.click()
-  await expect(page.getByText("Wuthering Heights")).toBeVisible()
+  await expect(page.getByText(first.title)).toBeVisible()
   await expect(input).toBeEnabled()
 
   await input.fill("show them again")
@@ -47,35 +53,39 @@ test("reuses the contextId on a follow-up message", async ({ page }) => {
   await expect(input).toBeEnabled()
 
   expect(bodies.length).toBeGreaterThanOrEqual(2)
-  const first = JSON.parse(bodies[0])
-  const second = JSON.parse(bodies[1])
-  expect(first.params.message.contextId).toBeUndefined()
-  expect(second.params.message.contextId).toBeTruthy()
+  const firstBody = JSON.parse(bodies[0])
+  const secondBody = JSON.parse(bodies[1])
+  expect(firstBody.params.message.contextId).toBeUndefined()
+  expect(secondBody.params.message.contextId).toBeTruthy()
 })
 
 test("approving an order actually decrements stock", async ({ page, request }) => {
-  const before = await stockOf(request, APPROVE_BOOK)
+  const books = await seedBooks(request)
+  const approveBook = books[1].ID
+  const before = await stockOf(request, approveBook)
 
   await page.goto(APP_URL)
-  await page.getByPlaceholder("Ask the catalog agent").fill(`order 1 copies of book ${APPROVE_BOOK}`)
+  await page.getByPlaceholder("Ask the catalog agent").fill(`order 1 copies of book ${approveBook}`)
   await page.getByRole("button", { name: "Send" }).click()
 
   const approve = page.getByRole("button", { name: "Approve" })
   await expect(approve).toBeVisible()
-  expect(await stockOf(request, APPROVE_BOOK)).toBe(before)
+  expect(await stockOf(request, approveBook)).toBe(before)
 
   await approve.click()
   await expect(approve).toBeHidden()
 
-  await expect.poll(async () => stockOf(request, APPROVE_BOOK)).toBe(before - 1)
+  await expect.poll(async () => stockOf(request, approveBook)).toBe(before - 1)
 })
 
 test("rejecting an order leaves stock untouched", async ({ page, request }) => {
-  const before = await stockOf(request, REJECT_BOOK)
+  const books = await seedBooks(request)
+  const rejectBook = books[2].ID
+  const before = await stockOf(request, rejectBook)
 
   await page.goto(APP_URL)
   const input = page.getByPlaceholder("Ask the catalog agent")
-  await input.fill(`order 1 copies of book ${REJECT_BOOK}`)
+  await input.fill(`order 1 copies of book ${rejectBook}`)
   await page.getByRole("button", { name: "Send" }).click()
 
   const reject = page.getByRole("button", { name: "Reject" })
@@ -89,7 +99,7 @@ test("rejecting an order leaves stock untouched", async ({ page, request }) => {
   // we read stock below.
   await expect(input).toBeEnabled()
 
-  expect(await stockOf(request, REJECT_BOOK)).toBe(before)
+  expect(await stockOf(request, rejectBook)).toBe(before)
 })
 
 test("agent card reflects the Phase B markdown-defined agent, not Phase A auto-agentification", async ({
