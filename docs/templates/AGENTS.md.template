@@ -1,0 +1,54 @@
+<!--
+  Template for a markdown-defined CAP agent, consumed by @cap-js/agents.
+
+  Copy this file to srv/<your-agent-folder>/AGENTS.md next to (or under) the CDS
+  service definition it applies to, then fill in the placeholders and delete these
+  comments.
+
+  WHAT THIS FILE CONTROLS
+  ------------------------
+  - The YAML frontmatter below populates the agent's A2A "agent card" — the metadata
+    a client (this plugin's chat UI, or any other A2A caller) sees when it discovers
+    the agent, e.g. at /a2a/<service>/.well-known/agent-card.json.
+  - Everything in the body, below the frontmatter, becomes the agent's SYSTEM PROMPT.
+    It is sent to the model on every turn and shapes how the agent behaves, what it
+    refuses to do, and how it reports outcomes — write it the way you'd brief a new
+    hire on this one service, not as documentation for other developers.
+
+  WHAT THIS FILE DOES NOT CONTROL
+  --------------------------------
+  Defining this file changes what the agent's card ADVERTISES, not what it can DO.
+  The set of callable tools is still derived directly from the CDS service model
+  (every action, every queryable entity) regardless of anything written here or in
+  any SKILL.md. An action left out of every skill's description is still callable —
+  it just won't be discoverable by scanning the card. Don't rely on omission from
+  this file as an access-control mechanism; it isn't one.
+-->
+---
+name: <agent-name>                 # short, stable identifier — used in URLs/logs
+version: "1.0.0"                   # bump when behaviour or skills change meaningfully
+description: >
+  <One to three sentences describing what this agent does and for whom, in the
+  voice of a catalog entry — this is what a human or another agent reads to decide
+  whether to use it.>
+---
+
+# <Agent Display Name>
+
+## Identity
+
+<Who is this agent? What is it responsible for? What tone/style should it use?
+E.g. "You are the X Agent for <domain>. You are concise, factual, and never invent
+data you have not retrieved via a tool.">
+
+## Behaviour
+
+<Concrete rules the agent must follow. Prefer a short bulleted list over prose:
+- What to do when a request is ambiguous.
+- What to verify before taking an action (especially any @agent.hitl action).
+- How to report success/failure — e.g. "never claim an action succeeded unless the
+  tool call returned successfully."
+- Anything the agent must refuse to do.
+
+Reference specific skills by name where relevant (see SKILL.md.template) rather
+than re-describing their workflow here — keep the workflow detail in the skill.>

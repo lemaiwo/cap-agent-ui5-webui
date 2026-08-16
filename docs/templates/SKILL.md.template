@@ -1,0 +1,58 @@
+<!--
+  Template for a single skill belonging to a markdown-defined CAP agent.
+
+  Copy this file to srv/<your-agent-folder>/skills/<skill-name>/SKILL.md (one folder
+  per skill), then fill in the placeholders and delete these comments.
+
+  WHAT THIS FILE CONTROLS
+  ------------------------
+  - The frontmatter `name` and `description` become one entry in the agent's card
+    under `skills` — again, metadata for discovery, not a capability gate (see the
+    note in AGENTS.md.template: tool availability comes from the CDS model, not
+    from whether a skill mentions it).
+  - The body becomes instructions injected into the agent's context when this skill
+    is relevant — effectively a focused, task-specific addendum to the system prompt
+    in AGENTS.md.
+
+  THE NON-OBVIOUS PART: description is routing metadata, not documentation
+  --------------------------------------------------------------------------
+  When this agent is itself invoked as a sub-agent/delegation target by a PARENT
+  agent (@cap-js/agents auto-connects agent services to each other as delegation
+  tools by default), the `description` you write here is what the PARENT model
+  reads to decide whether to route a given user request to THIS agent/skill at all.
+  It is not read by a human browsing docs — it is read by a model making a routing
+  decision, often without ever seeing the rest of this file. Write it accordingly:
+  lead with the trigger condition ("the user asks to buy, order, or reserve a
+  book"), not with implementation detail. A vague or internally-focused description
+  here means a parent agent may simply never delegate to this skill, silently.
+-->
+---
+name: <skill-name>                       # short, stable identifier — used as a key
+description: <One sentence: WHEN does this skill apply? Lead with the trigger, not
+  the mechanism — a parent agent reads this to decide whether to route here.>
+---
+
+# <Skill Display Name>
+
+## When to use
+
+<The situation(s) that should trigger this skill. Be concrete — this restates and
+expands the frontmatter description for a human reader, but the frontmatter line is
+what a routing model actually sees.>
+
+## Workflow
+
+<Numbered steps the agent should follow once this skill applies, e.g.:
+1. Resolve any ambiguous reference (title vs. ID, "some" vs. a specific quantity).
+2. Validate preconditions (stock, permissions, whatever applies) before acting.
+3. Call the relevant tool/action. Note if it requires human approval
+   (@agent.hitl) and that the request will pause.
+4. Report the outcome using data returned by the tool, not assumed.>
+
+## Examples
+
+<A few short input → expected-behaviour pairs, including at least one ambiguous
+case and how the agent should handle it (e.g. by asking a clarifying question
+instead of guessing):
+- "<example user request>" → <what the agent does>
+- "<ambiguous example>" → <agent asks for clarification instead of guessing>
