@@ -1,0 +1,20 @@
+# Force LF in the working tree on every platform, not just in the repository.
+#
+# This is load-bearing, not cosmetic. The UI5 build embeds the literal text of
+# each .ts source into the `sourcesContent` field of its .js.map — as escaped
+# "\r\n" or "\n" *inside a JSON string*. Git's usual eol normalisation never
+# touches those, because they are escape sequences in a string, not line
+# endings in the file.
+#
+# So a CRLF checkout (Windows default) produces a different dist/ than an LF
+# checkout (Linux/CI). Since dist/ is committed and CI rebuilds it to verify
+# freshness, that difference fails the build on the runner while looking clean
+# on the developer's machine. Pinning eol=lf makes the build reproducible
+# across platforms.
+* text=auto eol=lf
+
+# Binary formats must never be line-ending processed.
+*.png binary
+*.jpg binary
+*.ico binary
+*.tgz binary
