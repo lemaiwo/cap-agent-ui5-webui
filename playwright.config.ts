@@ -11,7 +11,11 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npx cds serve --in-memory",
+    // `cds-serve`, not `cds serve`: the `cds` CLI ships with @sap/cds-dk, which
+    // this repo does not depend on — it only appeared to work locally because a
+    // developer machine had cds-dk installed globally. @sap/cds itself ships the
+    // `cds-serve` binary, so this resolves from node_modules on a clean checkout.
+    command: "npx cds-serve --in-memory",
     cwd: "test/fixture/bookshop",
     url: "http://localhost:4004/a2a/catalog/.well-known/agent-card.json",
     env: { AGENT_LLM: "scripted" },
