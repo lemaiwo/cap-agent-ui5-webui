@@ -5,6 +5,16 @@
   xmlns:core="sap.ui.core"
   displayBlock="true">
   <Page id="page" title="{chat>/agentName}" class="capAgentChat">
+    <headerContent>
+      <Select
+        id="agentSelect"
+        items="{chat>/agents}"
+        selectedKey="{chat>/agentPath}"
+        change=".onAgentChange"
+        visible="{= ${chat>/agents}.length &gt; 1 }">
+        <core:Item key="{chat>path}" text="{chat>name}" />
+      </Select>
+    </headerContent>
     <content>
       <List
         id="messageList"
@@ -58,7 +68,7 @@
         <Input
           id="promptInput"
           width="100%"
-          placeholder="Ask the catalog agent"
+          placeholder="Ask the agent"
           submit=".onSubmit"
           enabled="{= !${chat>/busy} }" />
         <Button

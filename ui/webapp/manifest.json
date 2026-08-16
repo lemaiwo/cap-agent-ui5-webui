@@ -3,7 +3,7 @@
   "sap.app": {
     "id": "capagentui.chat",
     "type": "application",
-    "title": "Catalog Agent Chat",
+    "title": "Agent Chat",
     "applicationVersion": { "version": "1.0.0" }
   },
   "sap.ui": {
@@ -27,7 +27,7 @@
       ]
     },
     "config": {
-      "agentUrl": "/a2a/catalog"
+      "agentUrl": "/a2a/agent"
     }
   }
 }

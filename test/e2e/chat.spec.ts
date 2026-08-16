@@ -14,7 +14,7 @@ test("streams a reply containing real data from the database", async ({ page, re
 
   await page.goto(APP_URL)
 
-  const input = page.getByPlaceholder("Ask the catalog agent")
+  const input = page.getByPlaceholder("Ask the agent")
   await expect(input).toBeVisible()
 
   await input.fill("show me all books")
@@ -40,7 +40,7 @@ test("reuses the contextId on a follow-up message", async ({ page, request }) =>
   })
 
   await page.goto(APP_URL)
-  const input = page.getByPlaceholder("Ask the catalog agent")
+  const input = page.getByPlaceholder("Ask the agent")
   const send = page.getByRole("button", { name: "Send" })
 
   await input.fill("show me all books")
@@ -65,7 +65,7 @@ test("approving an order actually decrements stock", async ({ page, request }) =
   const before = await stockOf(request, approveBook)
 
   await page.goto(APP_URL)
-  await page.getByPlaceholder("Ask the catalog agent").fill(`order 1 copies of book ${approveBook}`)
+  await page.getByPlaceholder("Ask the agent").fill(`order 1 copies of book ${approveBook}`)
   await page.getByRole("button", { name: "Send" }).click()
 
   const approve = page.getByRole("button", { name: "Approve" })
@@ -84,7 +84,7 @@ test("rejecting an order leaves stock untouched", async ({ page, request }) => {
   const before = await stockOf(request, rejectBook)
 
   await page.goto(APP_URL)
-  const input = page.getByPlaceholder("Ask the catalog agent")
+  const input = page.getByPlaceholder("Ask the agent")
   await input.fill(`order 1 copies of book ${rejectBook}`)
   await page.getByRole("button", { name: "Send" }).click()
 
@@ -116,10 +116,38 @@ test("agent card reflects the Phase B markdown-defined agent, not Phase A auto-a
 test("an over-long message surfaces an error instead of wedging the UI", async ({ page }) => {
   await page.goto(APP_URL)
 
-  const input = page.getByPlaceholder("Ask the catalog agent")
+  const input = page.getByPlaceholder("Ask the agent")
   await input.fill("x".repeat(5001))
   await page.getByRole("button", { name: "Send" }).click()
 
   await expect(page.getByText(/too long|5000/i)).toBeVisible()
   await expect(input).toBeEnabled()
+})
+
+test("offers a picker when several agents exist and switching resets the conversation", async ({ page, request }) => {
+  const res = await request.get("/chat/agents.json")
+  expect(res.ok()).toBeTruthy()
+  expect((await res.json()).length).toBeGreaterThan(1)
+
+  await page.goto(APP_URL)
+  const picker = page.getByRole("combobox")
+  await expect(picker).toBeVisible()
+
+  const input = page.getByPlaceholder("Ask the agent")
+  await input.fill("show me all books")
+  await page.getByRole("button", { name: "Send" }).click()
+  await expect(input).toBeEnabled()
+  // Role is written to the DOM as data-role (see style.css) rather than
+  // rendered as visible text, so the user bubble is found by that attribute.
+  const userRow = page.locator('[data-role="user"]')
+  const before = await userRow.count()
+  expect(before).toBeGreaterThan(0)
+
+  // sap.m.Select renders a custom combobox, not a native <select>: the
+  // accessible "combobox" role sits on an off-screen a11y helper node whose
+  // click is intercepted by the visible label sitting on top of it, so the
+  // label itself — what a user actually clicks — is the reliable target.
+  await page.locator('[id$="-agentSelect-label"]').click()
+  await page.getByRole("option").nth(1).click()
+  await expect(userRow).toHaveCount(0) // conversation reset
 })

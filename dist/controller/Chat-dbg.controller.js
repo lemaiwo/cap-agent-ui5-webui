@@ -11,17 +11,60 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/model/json/JSONModel", "../
   const Chat = Controller.extend("webapp.controller.Chat", {
     constructor: function constructor() {
       Controller.prototype.constructor.apply(this, arguments);
-      this.agentName = "Catalog Agent";
+      this.agentName = "Agent";
+      this.agents = [];
+      this.agentPath = "";
     },
     onInit: function _onInit() {
       const owner = this.getOwnerComponent();
       const agentUrl = owner.getManifestEntry("/sap.ui5/config/agentUrl");
-      this.client = new A2AClient(agentUrl);
+      this.setAgent(agentUrl);
       this.state = initialState();
       this.model = new JSONModel();
       this.getView()?.setModel(this.model, "chat");
       this.sync();
-      void this.loadAgentCard();
+      void this.bootstrap(agentUrl);
+    },
+    onAgentChange: function _onAgentChange() {
+      const path = this.model.getProperty("/agentPath");
+      this.abort?.abort();
+      this.setAgent(path);
+      // contextId and task history belong to the agent that issued them, so a
+      // switch starts a genuinely new conversation rather than replaying one
+      // agent's thread at another.
+      this.state = initialState();
+      this.sync();
+    },
+    setAgent: function _setAgent(path) {
+      this.agentPath = path;
+      this.client = new A2AClient(path);
+    },
+    /**
+     * Fetches the agent list before the first agent-card lookup, so the card
+     * request goes out against whichever agent ends up selected rather than
+     * always the manifest fallback.
+     */
+    bootstrap: async function _bootstrap(fallbackUrl) {
+      await this.loadAgents(fallbackUrl);
+      await this.loadAgentCard();
+    },
+    /**
+     * Falls back to the manifest's agentUrl (kept as-is, a single implicit
+     * agent) when the request fails — e.g. this UI embedded without the
+     * plugin's own server mounting agents.json.
+     */
+    loadAgents: async function _loadAgents(fallbackUrl) {
+      try {
+        const res = await fetch("agents.json");
+        if (!res.ok) throw new Error(`Agents request failed: ${res.status}`);
+        const agents = await res.json();
+        this.agents = agents;
+        const preferred = agents.find(a => a.path === fallbackUrl) ?? agents[0];
+        if (preferred) this.setAgent(preferred.path);
+      } catch {
+        this.agents = [];
+      }
+      this.sync();
     },
     onSubmit: function _onSubmit() {
       void this.send();
@@ -49,7 +92,7 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/model/json/JSONModel", "../
         const card = await this.client.getAgentCard();
         this.agentName = card.name || this.agentName;
       } catch {
-        this.agentName = "Catalog Agent (offline)";
+        this.agentName = "Agent (offline)";
       }
       this.sync();
     },
@@ -114,7 +157,9 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/model/json/JSONModel", "../
     sync: function _sync() {
       this.model.setData({
         ...this.state,
-        agentName: this.agentName
+        agentName: this.agentName,
+        agents: this.agents,
+        agentPath: this.agentPath
       });
       this.scrollToNewest();
     },

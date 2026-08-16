@@ -10,24 +10,77 @@ import type { ChatState } from "../chat/chatState"
 /** Single place the wall clock is read. The reducer stays pure by taking this as input. */
 const now = (): string => new Date().toISOString()
 
+interface AgentInfo {
+  name: string
+  path: string
+  description: string
+}
+
 export default class Chat extends Controller {
   private model!: JSONModel
   private client!: A2AClient
   private state!: ChatState
-  private agentName = "Catalog Agent"
+  private agentName = "Agent"
+  private agents: AgentInfo[] = []
+  private agentPath = ""
   private abort?: AbortController
 
   public onInit(): void {
     const owner = this.getOwnerComponent() as Component
     const agentUrl = owner.getManifestEntry("/sap.ui5/config/agentUrl") as unknown as string
 
-    this.client = new A2AClient(agentUrl)
+    this.setAgent(agentUrl)
     this.state = initialState()
     this.model = new JSONModel()
     this.getView()?.setModel(this.model, "chat")
     this.sync()
 
-    void this.loadAgentCard()
+    void this.bootstrap(agentUrl)
+  }
+
+  public onAgentChange(): void {
+    const path = this.model.getProperty("/agentPath") as string
+    this.abort?.abort()
+    this.setAgent(path)
+    // contextId and task history belong to the agent that issued them, so a
+    // switch starts a genuinely new conversation rather than replaying one
+    // agent's thread at another.
+    this.state = initialState()
+    this.sync()
+  }
+
+  private setAgent(path: string): void {
+    this.agentPath = path
+    this.client = new A2AClient(path)
+  }
+
+  /**
+   * Fetches the agent list before the first agent-card lookup, so the card
+   * request goes out against whichever agent ends up selected rather than
+   * always the manifest fallback.
+   */
+  private async bootstrap(fallbackUrl: string): Promise<void> {
+    await this.loadAgents(fallbackUrl)
+    await this.loadAgentCard()
+  }
+
+  /**
+   * Falls back to the manifest's agentUrl (kept as-is, a single implicit
+   * agent) when the request fails — e.g. this UI embedded without the
+   * plugin's own server mounting agents.json.
+   */
+  private async loadAgents(fallbackUrl: string): Promise<void> {
+    try {
+      const res = await fetch("agents.json")
+      if (!res.ok) throw new Error(`Agents request failed: ${res.status}`)
+      const agents = (await res.json()) as AgentInfo[]
+      this.agents = agents
+      const preferred = agents.find((a) => a.path === fallbackUrl) ?? agents[0]
+      if (preferred) this.setAgent(preferred.path)
+    } catch {
+      this.agents = []
+    }
+    this.sync()
   }
 
   public onSubmit(): void {
@@ -62,7 +115,7 @@ export default class Chat extends Controller {
       const card = await this.client.getAgentCard()
       this.agentName = card.name || this.agentName
     } catch {
-      this.agentName = "Catalog Agent (offline)"
+      this.agentName = "Agent (offline)"
     }
     this.sync()
   }
@@ -125,7 +178,12 @@ export default class Chat extends Controller {
   }
 
   private sync(): void {
-    this.model.setData({ ...this.state, agentName: this.agentName })
+    this.model.setData({
+      ...this.state,
+      agentName: this.agentName,
+      agents: this.agents,
+      agentPath: this.agentPath,
+    })
     this.scrollToNewest()
   }
 
