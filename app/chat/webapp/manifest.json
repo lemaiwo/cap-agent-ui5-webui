@@ -21,6 +21,11 @@
       "id": "chatView",
       "async": true
     },
+    "resources": {
+      "css": [
+        { "uri": "css/style.css" }
+      ]
+    },
     "config": {
       "agentUrl": "/a2a/catalog"
     }

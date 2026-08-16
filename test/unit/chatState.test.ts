@@ -8,6 +8,8 @@ import {
 } from "../../app/chat/webapp/chat/chatState"
 import type { A2AEvent } from "../../app/chat/webapp/a2a/types"
 
+const NOW = "2026-08-16T12:00:00.000Z"
+
 const taskEvent: A2AEvent = {
   kind: "task",
   id: "t1",
@@ -42,7 +44,7 @@ function artifactEvent(text: string, append: boolean): A2AEvent {
 }
 
 test("appendUser adds a user message and marks busy", () => {
-  const s = appendUser(initialState(), "hello")
+  const s = appendUser(initialState(), "hello", NOW)
   assert.equal(s.messages.length, 1)
   assert.equal(s.messages[0].role, "user")
   assert.equal(s.busy, true)
@@ -50,40 +52,40 @@ test("appendUser adds a user message and marks busy", () => {
 })
 
 test("task event records ids", () => {
-  const s = applyEvent(appendUser(initialState(), "hi"), taskEvent)
+  const s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
   assert.equal(s.taskId, "t1")
   assert.equal(s.contextId, "c1")
   assert.equal(s.busy, true)
 })
 
 test("working status sets the transient status line", () => {
-  let s = applyEvent(appendUser(initialState(), "hi"), taskEvent)
-  s = applyEvent(s, statusEvent("working", "Querying Books"))
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, statusEvent("working", "Querying Books"), NOW)
   assert.equal(s.status, "Querying Books")
   assert.equal(s.busy, true)
 })
 
 test("artifact-update with append=false replaces the streaming bubble", () => {
-  let s = applyEvent(appendUser(initialState(), "hi"), taskEvent)
-  s = applyEvent(s, artifactEvent("Hello", false))
-  s = applyEvent(s, artifactEvent("Hello world", false))
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, artifactEvent("Hello", false), NOW)
+  s = applyEvent(s, artifactEvent("Hello world", false), NOW)
   const agent = s.messages.filter((m) => m.role === "agent")
   assert.equal(agent.length, 1)
   assert.equal(agent[0].text, "Hello world")
 })
 
 test("artifact-update with append=true concatenates", () => {
-  let s = applyEvent(appendUser(initialState(), "hi"), taskEvent)
-  s = applyEvent(s, artifactEvent("Hello", false))
-  s = applyEvent(s, artifactEvent(" world", true))
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, artifactEvent("Hello", false), NOW)
+  s = applyEvent(s, artifactEvent(" world", true), NOW)
   const agent = s.messages.filter((m) => m.role === "agent")
   assert.equal(agent[0].text, "Hello world")
 })
 
 test("completed clears busy and does not duplicate the streamed text", () => {
-  let s = applyEvent(appendUser(initialState(), "hi"), taskEvent)
-  s = applyEvent(s, artifactEvent("Answer", false))
-  s = applyEvent(s, statusEvent("completed", "Answer"))
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, artifactEvent("Answer", false), NOW)
+  s = applyEvent(s, statusEvent("completed", "Answer"), NOW)
   assert.equal(s.busy, false)
   assert.equal(s.status, "")
   assert.equal(s.messages.filter((m) => m.role === "agent").length, 1)
@@ -91,16 +93,16 @@ test("completed clears busy and does not duplicate the streamed text", () => {
 })
 
 test("completed adds the message when nothing streamed", () => {
-  let s = applyEvent(appendUser(initialState(), "hi"), taskEvent)
-  s = applyEvent(s, statusEvent("completed", "Direct answer"))
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, statusEvent("completed", "Direct answer"), NOW)
   const agent = s.messages.filter((m) => m.role === "agent")
   assert.equal(agent.length, 1)
   assert.equal(agent[0].text, "Direct answer")
 })
 
 test("input-required raises pendingApproval and clears busy", () => {
-  let s = applyEvent(appendUser(initialState(), "order it"), taskEvent)
-  s = applyEvent(s, statusEvent("input-required", "Tool execution requires approval"))
+  let s = applyEvent(appendUser(initialState(), "order it", NOW), taskEvent, NOW)
+  s = applyEvent(s, statusEvent("input-required", "Tool execution requires approval"), NOW)
   assert.equal(s.pendingApproval, true)
   assert.equal(s.busy, false)
   assert.equal(s.taskId, "t1")
@@ -108,21 +110,53 @@ test("input-required raises pendingApproval and clears busy", () => {
 })
 
 test("failed clears busy and records an error", () => {
-  let s = applyEvent(appendUser(initialState(), "hi"), taskEvent)
-  s = applyEvent(s, statusEvent("failed", "boom"))
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, statusEvent("failed", "boom"), NOW)
   assert.equal(s.busy, false)
   assert.equal(s.messages.at(-1)?.role, "error")
 })
 
 test("canceled clears busy", () => {
-  let s = applyEvent(appendUser(initialState(), "hi"), taskEvent)
-  s = applyEvent(s, statusEvent("canceled"))
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, statusEvent("canceled"), NOW)
   assert.equal(s.busy, false)
 })
 
 test("appendError never leaves the UI busy", () => {
-  const s = appendError(appendUser(initialState(), "hi"), "network down")
+  const s = appendError(appendUser(initialState(), "hi", NOW), "network down", NOW)
   assert.equal(s.busy, false)
   assert.equal(s.pendingApproval, false)
   assert.equal(s.messages.at(-1)?.role, "error")
+})
+
+test("appendUser stamps the message with the supplied time", () => {
+  const s = appendUser(initialState(), "hello", NOW)
+  assert.equal(s.messages[0].at, NOW)
+})
+
+test("agent and error messages are stamped with the supplied time", () => {
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, artifactEvent("streamed", false), "2026-08-16T12:00:05.000Z")
+  assert.equal(s.messages.at(-1)?.at, "2026-08-16T12:00:05.000Z")
+
+  const e = appendError(s, "boom", "2026-08-16T12:00:09.000Z")
+  assert.equal(e.messages.at(-1)?.at, "2026-08-16T12:00:09.000Z")
+})
+
+test("a streaming bubble keeps its original timestamp as chunks arrive", () => {
+  let s = applyEvent(appendUser(initialState(), "hi", NOW), taskEvent, NOW)
+  s = applyEvent(s, artifactEvent("Hel", false), "2026-08-16T12:00:01.000Z")
+  s = applyEvent(s, artifactEvent("lo", true), "2026-08-16T12:00:07.000Z")
+  const agent = s.messages.filter((m) => m.role === "agent")
+  assert.equal(agent.length, 1)
+  assert.equal(agent[0].text, "Hello")
+  assert.equal(agent[0].at, "2026-08-16T12:00:01.000Z")
+})
+
+test("applyEvent remains pure — the input state is not mutated", () => {
+  const before = appendUser(initialState(), "hi", NOW)
+  const snapshot = JSON.stringify(before)
+  applyEvent(before, taskEvent, NOW)
+  applyEvent(before, artifactEvent("x", false), NOW)
+  assert.equal(JSON.stringify(before), snapshot)
 })

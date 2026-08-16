@@ -2,9 +2,13 @@ import Controller from "sap/ui/core/mvc/Controller"
 import JSONModel from "sap/ui/model/json/JSONModel"
 import Component from "sap/ui/core/Component"
 import Input from "sap/m/Input"
+import Page from "sap/m/Page"
 import { A2AClient } from "../a2a/A2AClient"
 import { initialState, appendUser, appendError, applyEvent } from "../chat/chatState"
 import type { ChatState } from "../chat/chatState"
+
+/** Single place the wall clock is read. The reducer stays pure by taking this as input. */
+const now = (): string => new Date().toISOString()
 
 export default class Chat extends Controller {
   private model!: JSONModel
@@ -78,7 +82,7 @@ export default class Chat extends Controller {
 
   protected async exchange(text: string, resumeTaskId: string | null): Promise<void> {
     const contextId = this.state.contextId
-    this.state = appendUser(this.state, text)
+    this.state = appendUser(this.state, text, now())
     this.sync()
 
     this.abort = new AbortController()
@@ -87,7 +91,7 @@ export default class Chat extends Controller {
       await this.client.streamMessage(
         { text, contextId, taskId: resumeTaskId },
         (event) => {
-          this.state = applyEvent(this.state, event)
+          this.state = applyEvent(this.state, event, now())
           this.sync()
         },
         this.abort.signal,
@@ -95,7 +99,7 @@ export default class Chat extends Controller {
     } catch (err) {
       const error = err as Error
       if (error.name !== "AbortError") {
-        this.state = appendError(this.state, error.message)
+        this.state = appendError(this.state, error.message, now())
       } else {
         this.state = { ...this.state, busy: false, status: "" }
       }
@@ -109,7 +113,29 @@ export default class Chat extends Controller {
     }
   }
 
+  /**
+   * Bound by the view to render each bubble's timestamp. Returns local
+   * HH:MM; an empty/invalid stamp renders as nothing rather than "Invalid Date".
+   */
+  public formatTime(at?: string): string {
+    if (!at) return ""
+    const d = new Date(at)
+    if (Number.isNaN(d.getTime())) return ""
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+  }
+
   private sync(): void {
     this.model.setData({ ...this.state, agentName: this.agentName })
+    this.scrollToNewest()
+  }
+
+  /**
+   * Keep the newest message in view. Deferred a frame because the list has not
+   * re-rendered at the moment setData returns.
+   */
+  private scrollToNewest(): void {
+    const page = this.byId("page") as Page | undefined
+    if (!page) return
+    setTimeout(() => page.scrollTo(1e6, 200), 0)
   }
 }
