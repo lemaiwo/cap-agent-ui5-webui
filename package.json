@@ -8,8 +8,11 @@
     "cds-plugin.js",
     "lib",
     "dist",
-    "docs",
     "test-support",
+    "docs/templates",
+    "docs/agent-phases.md",
+    "docs/agent-card-phase-a.json",
+    "docs/agent-card-phase-b.json",
     "README.md"
   ],
   "exports": {
