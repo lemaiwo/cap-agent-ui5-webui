@@ -5,6 +5,16 @@ module.exports = class CatalogService extends cds.ApplicationService {
     const { Books, Orders } = this.entities
     const { SELECT, INSERT, UPDATE } = cds.ql
 
+    // E2E only: the plugin's mock LLM cannot call actions, so HITL would be
+    // unreachable. Handlers registered here take precedence over the plugin's
+    // default buildModel handler.
+    if (process.env.AGENT_LLM === "scripted") {
+      this.on("buildModel", async () => {
+        const { default: ScriptedChatModel } = await import("../test-support/scripted-llm.mjs")
+        return new ScriptedChatModel("scripted")
+      })
+    }
+
     this.on("submitOrder", async (req) => {
       const { book, quantity } = req.data
 

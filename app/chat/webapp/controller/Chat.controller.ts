@@ -39,6 +39,20 @@ export default class Chat extends Controller {
     if (this.state.taskId) void this.client.cancel(this.state.taskId)
   }
 
+  public onApprove(): void {
+    void this.decide("approve")
+  }
+
+  public onReject(): void {
+    void this.decide("reject")
+  }
+
+  private async decide(decision: "approve" | "reject"): Promise<void> {
+    const taskId = this.state.taskId
+    if (!taskId || !this.state.pendingApproval) return
+    await this.exchange(decision, taskId)
+  }
+
   private async loadAgentCard(): Promise<void> {
     try {
       const card = await this.client.getAgentCard()
