@@ -88,6 +88,29 @@ test("multiple unknown config keys are named together in one warning", () => {
   assert.match(c.warnings[0], /foo/)
 })
 
+// Regression: object spread copies an explicit `undefined`/`null` property
+// too, so `{ mountPath: undefined }` overwrote the default with `undefined`
+// rather than leaving it untouched — and the trailing-slash strip then called
+// .replace on it unconditionally. A consumer writing something like
+// `mountPath: process.env.CHAT_PATH` with that variable unset hits this
+// immediately, and resolveConfig is called unguarded from cds-plugin.js's
+// async bootstrap listener with no try/catch — a throw here plausibly takes
+// the whole CAP server down at startup, directly contradicting this
+// function's own "nothing here throws" contract.
+test("an explicit undefined mountPath does not throw and falls back to the default", () => {
+  assert.doesNotThrow(() => resolveConfig({ "cap-agent-ui5-webui": { mountPath: undefined } }))
+  const c = resolveConfig({ "cap-agent-ui5-webui": { mountPath: undefined } })
+  assert.equal(c.mountPath, "/chat")
+  assert.equal(c.warnings.length, 1)
+})
+
+test("an explicit null mountPath does not throw and falls back to the default", () => {
+  assert.doesNotThrow(() => resolveConfig({ "cap-agent-ui5-webui": { mountPath: null } }))
+  const c = resolveConfig({ "cap-agent-ui5-webui": { mountPath: null } })
+  assert.equal(c.mountPath, "/chat")
+  assert.equal(c.warnings.length, 1)
+})
+
 test("a usable config carries no warnings", () => {
   assert.deepEqual(resolveConfig({}).warnings, [])
   assert.deepEqual(resolveConfig({ "cap-agent-ui5-webui": { mountPath: "ui" } }).warnings, [])
