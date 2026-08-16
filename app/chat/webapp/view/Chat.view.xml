@@ -5,7 +5,47 @@
   displayBlock="true">
   <Page id="page" title="{chat>/agentName}">
     <content>
-      <Text id="bootProbe" text="Agent: {chat>/agentName}" class="sapUiSmallMargin" />
+      <List
+        id="messageList"
+        items="{chat>/messages}"
+        showSeparators="None"
+        noDataText="Ask the agent something to get started.">
+        <CustomListItem>
+          <VBox class="sapUiSmallMarginBegin sapUiTinyMarginTop">
+            <Label text="{chat>role}" design="Bold" />
+            <Text text="{chat>text}" />
+          </VBox>
+        </CustomListItem>
+      </List>
+
+      <Text
+        id="statusLine"
+        text="{chat>/status}"
+        visible="{= !!${chat>/status} }"
+        class="sapUiSmallMarginBegin" />
+
+      <HBox visible="{chat>/pendingApproval}" class="sapUiSmallMargin">
+        <Button id="approveBtn" text="Approve" type="Emphasized" press=".onApprove" />
+        <Button id="rejectBtn" text="Reject" press=".onReject" class="sapUiTinyMarginBegin" />
+      </HBox>
     </content>
+
+    <footer>
+      <Toolbar>
+        <Input
+          id="promptInput"
+          width="100%"
+          placeholder="Ask the catalog agent"
+          submit=".onSubmit"
+          enabled="{= !${chat>/busy} }" />
+        <Button
+          id="sendBtn"
+          text="Send"
+          type="Emphasized"
+          press=".onSend"
+          enabled="{= !${chat>/busy} }" />
+        <Button id="cancelBtn" text="Cancel" press=".onCancel" visible="{chat>/busy}" />
+      </Toolbar>
+    </footer>
   </Page>
 </mvc:View>
