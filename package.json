@@ -48,7 +48,7 @@
   "scripts": {
     "build": "cd ui && ui5 build --dest ../dist --clean-dest",
     "start:fixture": "npm start --prefix test/fixture/bookshop",
-    "test:unit": "node --import tsx --test test/unit/sse.test.ts test/unit/chatState.test.ts test/unit/A2AClient.test.ts test/unit/scriptedLlm.test.mjs test/unit/config.test.ts test/unit/mount.test.mjs",
+    "test:unit": "node --import tsx --test test/unit/sse.test.ts test/unit/chatState.test.ts test/unit/A2AClient.test.ts test/unit/scriptedLlm.test.mjs test/unit/config.test.ts test/unit/mount.test.mjs test/unit/discover.test.ts",
     "test:service": "node --test test/fixture/bookshop/test/service/catalog.test.js",
     "test": "npm run test:unit && npm run test:service",
     "test:e2e": "playwright test",

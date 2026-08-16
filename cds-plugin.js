@@ -21,4 +21,21 @@ cds.on("bootstrap", async (app) => {
   // handler, or express.static answers "/" first and the override is dead code.
   mountIndex(app, config.mountPath, config.bootstrapUrl, LOG)
   mountUi(app, config.mountPath, LOG)
+
+  // Registered here, at bootstrap, but filled below on "served" — Express
+  // resolves routes at request time, so this closure over `agents` sees
+  // whatever discoverAgents() has produced by the time a request arrives.
+  // Registering the route inside the "served" handler instead would race
+  // CAP's own middleware and 404 handler.
+  let agents = []
+  app.get(`${config.mountPath}/agents.json`, (_req, res) => res.json(agents))
+
+  cds.on("served", async (services) => {
+    const { discoverAgents } = await import("./lib/discover.mjs")
+    agents = discoverAgents(Object.values(services), config.agents)
+    LOG.info(
+      `cap-agent-ui5-webui: discovered ${agents.length} agent(s)`,
+      agents.map((a) => a.path),
+    )
+  })
 })
