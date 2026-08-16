@@ -6,6 +6,13 @@ export interface ChatMessage {
   role: "user" | "agent" | "error"
   text: string
   streaming: boolean
+  /**
+   * ISO timestamp of when the message first appeared. Supplied by the caller
+   * rather than read from a clock in here, so this module stays pure and its
+   * tests stay deterministic. A streaming bubble keeps the stamp it was
+   * created with as later chunks arrive.
+   */
+  at: string
 }
 
 export interface ChatState {
@@ -34,10 +41,11 @@ function push(
   state: ChatState,
   role: ChatMessage["role"],
   text: string,
+  now: string,
   streaming = false,
 ): ChatState {
   const id = `${role.charAt(0)}${state.messages.length}`
-  return { ...state, messages: [...state.messages, { id, role, text, streaming }] }
+  return { ...state, messages: [...state.messages, { id, role, text, streaming, at: now }] }
 }
 
 function finalize(state: ChatState): ChatState {
@@ -48,9 +56,9 @@ function finalize(state: ChatState): ChatState {
   }
 }
 
-export function appendUser(state: ChatState, text: string): ChatState {
+export function appendUser(state: ChatState, text: string, now: string): ChatState {
   return {
-    ...push(state, "user", text),
+    ...push(state, "user", text, now),
     busy: true,
     status: "",
     pendingApproval: false,
@@ -58,35 +66,42 @@ export function appendUser(state: ChatState, text: string): ChatState {
   }
 }
 
-export function appendError(state: ChatState, text: string): ChatState {
+export function appendError(state: ChatState, text: string, now: string): ChatState {
   return {
-    ...push(finalize(state), "error", text),
+    ...push(finalize(state), "error", text, now),
     busy: false,
     status: "",
     pendingApproval: false,
   }
 }
 
-function upsertStream(state: ChatState, text: string, append: boolean): ChatState {
+function upsertStream(
+  state: ChatState,
+  text: string,
+  append: boolean,
+  now: string,
+): ChatState {
   const messages = [...state.messages]
   const lastIndex = messages.length - 1
   const last = messages[lastIndex]
 
   if (last && last.role === "agent" && last.streaming) {
+    // Keep the bubble's original `at` — it is when the reply started, not when
+    // this particular chunk landed.
     messages[lastIndex] = { ...last, text: append ? last.text + text : text }
     return { ...state, messages, streamed: true, busy: true }
   }
 
-  return { ...push(state, "agent", text, true), streamed: true, busy: true }
+  return { ...push(state, "agent", text, now, true), streamed: true, busy: true }
 }
 
-export function applyEvent(state: ChatState, event: A2AEvent): ChatState {
+export function applyEvent(state: ChatState, event: A2AEvent, now: string): ChatState {
   if (event.kind === "task") {
     return { ...state, taskId: event.id, contextId: event.contextId, busy: true }
   }
 
   if (event.kind === "artifact-update") {
-    return upsertStream(state, partsToText(event.artifact?.parts), event.append === true)
+    return upsertStream(state, partsToText(event.artifact?.parts), event.append === true, now)
   }
 
   if (event.kind === "status-update") {
@@ -103,13 +118,13 @@ export function applyEvent(state: ChatState, event: A2AEvent): ChatState {
 
       case "input-required": {
         const done = finalize(base)
-        const withMessage = text && !done.streamed ? push(done, "agent", text) : done
+        const withMessage = text && !done.streamed ? push(done, "agent", text, now) : done
         return { ...withMessage, busy: false, status: "", pendingApproval: true }
       }
 
       case "completed": {
         const done = finalize(base)
-        const withMessage = text && !done.streamed ? push(done, "agent", text) : done
+        const withMessage = text && !done.streamed ? push(done, "agent", text, now) : done
         return {
           ...withMessage,
           busy: false,
@@ -121,7 +136,7 @@ export function applyEvent(state: ChatState, event: A2AEvent): ChatState {
 
       case "failed":
       case "canceled":
-        return appendError(base, text || `Task ${event.status.state}.`)
+        return appendError(base, text || `Task ${event.status.state}.`, now)
 
       default:
         return base
