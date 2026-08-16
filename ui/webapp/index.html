@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Catalog Agent Chat</title>
+    <style>
+      /* This height chain is deliberately page-level. It is safe here only
+         because this index.html is the plugin's own page shell — nothing
+         else shares this document — and not markup injected into a host
+         application's page. css/style.css deliberately carries no rules
+         targeting html, body, body > div, #container, or .sapUiView, so a
+         future "embed inside a host page" mode inherits none of this; this
+         block is the one place the height fix is allowed to live.
+
+         Without this, <body> collapses to its content's natural height and
+         the data-height="100%" on the component container below has no
+         sized ancestor to resolve against — UI5 still paints the app, but
+         outside <body>'s own layout/hit-test box, so controls below the
+         fold are visible but not really clickable. A percentage-height
+         chain needs every ancestor sized:
+         - UI5's ComponentSupport inserts an extra unnamed wrapper <div>
+           directly under <body> (around #container) that also needs a
+           height, hence `body > div`.
+         - The framework applies the container's own height:100% down to
+           #container/#container-uiarea, but stops at the component
+           boundary: `.sapUiViewDisplayBlock` (UI5's own library.css) only
+           sets `display: block`, no height — so the view root needs its
+           own rule too, targeted by the stable `.sapUiView` class rather
+           than its generated id. Without this, sap.m.Page's own
+           JS-computed content height (which depends on its DOM node's
+           actual measured height) stays 0, and everything below the
+           header renders outside any properly-sized/hit-testable box. */
+      html,
+      body,
+      body > div,
+      #container,
+      .sapUiView {
+        height: 100%;
+      }
+    </style>
+    <script
+      id="sap-ui-bootstrap"
+      src="https://ui5.sap.com/1.120.0/resources/sap-ui-core.js"
+      data-sap-ui-theme="sap_horizon"
+      data-sap-ui-resource-roots='{"capagentui.chat": "./"}'
+      data-sap-ui-oninit="module:sap/ui/core/ComponentSupport"
+      data-sap-ui-compat-version="edge"
+      data-sap-ui-async="true"
+    ></script>
+  </head>
+  <body class="sapUiBody">
+    <div
+      data-sap-ui-component
+      data-name="capagentui.chat"
+      data-id="container"
+      data-height="100%"
+    ></div>
+  </body>
+</html>

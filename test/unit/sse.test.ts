@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { parseSSE } from "../../app/chat/webapp/a2a/sse"
+import { parseSSE } from "../../ui/webapp/a2a/sse"
 
 test("parses a single complete frame", () => {
   const { frames, rest } = parseSSE("", 'data: {"a":1}\n\n')

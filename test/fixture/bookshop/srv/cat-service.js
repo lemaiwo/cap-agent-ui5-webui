@@ -10,8 +10,10 @@ module.exports = class CatalogService extends cds.ApplicationService {
     // default buildModel handler.
     if (process.env.AGENT_LLM === "scripted") {
       this.on("buildModel", async () => {
-        const { default: ScriptedChatModel } = await import("../test-support/scripted-llm.mjs")
-        const { default: script } = await import("../test/fixture-script.mjs")
+        const { default: ScriptedChatModel } = await import(
+          "../../../../test-support/scripted-llm.mjs"
+        )
+        const { default: script } = await import("../fixture-script.mjs")
         return new ScriptedChatModel("scripted", { script, entity: "Books" })
       })
     }

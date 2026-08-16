@@ -5,8 +5,8 @@ import {
   appendUser,
   appendError,
   applyEvent,
-} from "../../app/chat/webapp/chat/chatState"
-import type { A2AEvent } from "../../app/chat/webapp/a2a/types"
+} from "../../ui/webapp/chat/chatState"
+import type { A2AEvent } from "../../ui/webapp/a2a/types"
 
 const NOW = "2026-08-16T12:00:00.000Z"
 

@@ -4,5 +4,6 @@ gen/
 .env
 test-results/
 playwright-report/
-dist/
+# dist/ is deliberately NOT ignored: it is the plugin's published payload.
+# The consumer installs prebuilt output; without it the plugin serves nothing.
 .superpowers/

@@ -1,0 +1,2 @@
+sap.ui.define([],function(){"use strict";function t(t,n){const e=(t+n).replace(/\r\n/g,"\n");const s=e.split("\n\n");const i=s.pop()??"";const r=[];for(const t of s){if(!t.trim())continue;let n;const e=[];for(const s of t.split("\n")){if(s.startsWith(":"))continue;if(s.startsWith("event:"))n=s.slice(6).trim();else if(s.startsWith("data:"))e.push(s.slice(5).replace(/^ /,""))}if(e.length)r.push({event:n,data:e.join("\n")})}return{frames:r,rest:i}}var n={__esModule:true};n.parseSSE=t;return n});
+//# sourceMappingURL=sse.js.map

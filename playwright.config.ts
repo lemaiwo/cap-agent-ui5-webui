@@ -12,6 +12,7 @@ export default defineConfig({
   },
   webServer: {
     command: "npx cds serve --in-memory",
+    cwd: "test/fixture/bookshop",
     url: "http://localhost:4004/a2a/catalog/.well-known/agent-card.json",
     env: { AGENT_LLM: "scripted" },
     reuseExistingServer: false,

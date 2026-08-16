@@ -1,0 +1,178 @@
+/*
+ * Chat presentation.
+ *
+ * Everything here is scoped beneath `.capAgentChat`, the class on the view's
+ * root Page, so this stylesheet can never reach outside the plugin's own DOM
+ * subtree — it must be safe to load into a host application's page. Nothing
+ * here targets bare `html`, `body`, `body > div`, `#container`, or a
+ * framework-wide class like `.sapUiView`; the page-level height chain those
+ * elements need lives in index.html instead, because index.html is the
+ * plugin's own page shell and this stylesheet is not.
+ *
+ * Role-based styling is driven by a data-role attribute emitted from the view
+ * via sap.ui.core.CustomData (writeToDom="true"), because `class` is not
+ * bindable in XML views. Colours come from SAP Horizon CSS variables where
+ * available so the app follows the active theme, with literal fallbacks.
+ */
+
+.capAgentChat .chatList {
+  background: transparent;
+  padding: 0.5rem 0 0 0;
+}
+
+/* Kill the default list-item chrome so the bubble is the only visible surface. */
+.capAgentChat .chatRow,
+.capAgentChat .chatRow.sapMLIB {
+  background: transparent;
+  border: none;
+  padding: 0.25rem 1rem;
+}
+
+.capAgentChat .chatRow.sapMLIB:hover,
+.capAgentChat .chatRow.sapMLIB.sapMLIBHoverable:hover {
+  background: transparent;
+}
+
+.capAgentChat .chatBubbleWrap {
+  max-width: 70%;
+  min-width: 0;
+}
+
+.capAgentChat .chatBubble {
+  border-radius: 1rem;
+  padding: 0.625rem 0.875rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  overflow-wrap: anywhere;
+}
+
+.capAgentChat .chatText {
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.capAgentChat .chatTime {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin: 0.15rem 0.35rem 0 0.35rem;
+}
+
+/* ── Agent (left) ───────────────────────────────────────────────────────── */
+
+.capAgentChat .chatRow[data-role="agent"] .chatBubbleWrap {
+  align-items: flex-start;
+  margin-right: auto;
+}
+
+.capAgentChat .chatRow[data-role="agent"] .chatBubble {
+  background: var(--sapList_Background, #ffffff);
+  border: 1px solid var(--sapList_BorderColor, #d9d9d9);
+  border-bottom-left-radius: 0.25rem;
+}
+
+/*
+ * Agent text stays proportional, like any chat client — an earlier revision
+ * set the whole bubble monospace so tool payloads would align, but that made
+ * ordinary prose ("Tool execution requires approval") read as code, which is
+ * how most replies will look once a real LLM is behind this. `pre-wrap` on
+ * .chatText already preserves the line breaks in tool output, which is the
+ * part that actually matters for readability.
+ */
+
+/* ── User (right) ───────────────────────────────────────────────────────── */
+
+.capAgentChat .chatRow[data-role="user"] .chatBubbleWrap {
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.capAgentChat .chatRow[data-role="user"] .chatBubble {
+  background: var(--sapButton_Emphasized_Background, #0070f2);
+  border: 1px solid var(--sapButton_Emphasized_BorderColor, #0070f2);
+  border-bottom-right-radius: 0.25rem;
+}
+
+.capAgentChat .chatRow[data-role="user"] .chatText,
+.capAgentChat .chatRow[data-role="user"] .chatText .sapMText {
+  color: var(--sapButton_Emphasized_TextColor, #ffffff);
+}
+
+/* ── Error (left, tinted) ───────────────────────────────────────────────── */
+
+.capAgentChat .chatRow[data-role="error"] .chatBubbleWrap {
+  align-items: flex-start;
+  margin-right: auto;
+}
+
+.capAgentChat .chatRow[data-role="error"] .chatBubble {
+  background: var(--sapErrorBackground, #ffeaea);
+  border: 1px solid var(--sapErrorBorderColor, #e90b0b);
+  border-bottom-left-radius: 0.25rem;
+}
+
+/* ── Typing indicator ───────────────────────────────────────────────────── */
+
+.capAgentChat .chatTypingRow {
+  padding: 0.25rem 1rem 0 1rem;
+}
+
+.capAgentChat .chatTypingBubble {
+  background: var(--sapList_Background, #ffffff);
+  border: 1px solid var(--sapList_BorderColor, #d9d9d9);
+  border-bottom-left-radius: 0.25rem;
+}
+
+.capAgentChat .chatDots {
+  align-items: center;
+}
+
+.capAgentChat .chatDot {
+  font-size: 0.5rem;
+  color: var(--sapContent_LabelColor, #556b82);
+  animation: chatBlink 1.2s infinite ease-in-out;
+}
+
+.capAgentChat .chatDot2 { animation-delay: 0.2s; }
+.capAgentChat .chatDot3 { animation-delay: 0.4s; }
+
+@keyframes chatBlink {
+  0%, 80%, 100% { opacity: 0.25; }
+  40%           { opacity: 1; }
+}
+
+.capAgentChat .chatStatusText {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+/* Respect users who ask for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .capAgentChat .chatDot { animation: none; opacity: 0.6; }
+}
+
+/* ── Approval card ──────────────────────────────────────────────────────── */
+
+.capAgentChat .chatApprovalRow {
+  padding: 0.5rem 1rem 0 1rem;
+}
+
+.capAgentChat .chatApprovalCard {
+  background: var(--sapInformationBackground, #f5faff);
+  border: 1px solid var(--sapInformationBorderColor, #0070f2);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  max-width: 70%;
+}
+
+.capAgentChat .chatApprovalTitle {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.capAgentChat .chatApprovalButtons {
+  align-items: center;
+}
+
+.capAgentChat .chatFooter {
+  padding: 0.5rem;
+}
