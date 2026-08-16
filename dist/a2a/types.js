@@ -1,0 +1,2 @@
+sap.ui.define([],function(){"use strict";function t(t){if(!t)return"";return t.filter(t=>t.kind==="text").map(t=>t.text).join("")}var e={__esModule:true};e.partsToText=t;return e});
+//# sourceMappingURL=types.js.map

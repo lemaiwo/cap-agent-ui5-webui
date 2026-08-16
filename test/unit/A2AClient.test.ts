@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { A2AClient } from "../../app/chat/webapp/a2a/A2AClient"
-import type { A2AEvent } from "../../app/chat/webapp/a2a/types"
+import { A2AClient } from "../../ui/webapp/a2a/A2AClient"
+import type { A2AEvent } from "../../ui/webapp/a2a/types"
 
 function sseResponse(frames: string[]): Response {
   const body = new ReadableStream<Uint8Array>({

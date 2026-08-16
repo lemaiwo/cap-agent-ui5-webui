@@ -1,0 +1,84 @@
+<mvc:View
+  controllerName="capagentui.chat.controller.Chat"
+  xmlns="sap.m"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:core="sap.ui.core"
+  displayBlock="true">
+  <Page id="page" title="{chat>/agentName}" class="capAgentChat">
+    <headerContent>
+      <Select
+        id="agentSelect"
+        items="{chat>/agents}"
+        selectedKey="{chat>/agentPath}"
+        change=".onAgentChange"
+        visible="{= ${chat>/agents}.length &gt; 1 }">
+        <core:Item key="{chat>path}" text="{chat>name}" />
+      </Select>
+    </headerContent>
+    <content>
+      <List
+        id="messageList"
+        items="{chat>/messages}"
+        showSeparators="None"
+        class="chatList"
+        noDataText="Ask the agent something to get started.">
+        <CustomListItem class="chatRow">
+          <customData>
+            <core:CustomData key="role" value="{chat>role}" writeToDom="true" />
+          </customData>
+          <VBox class="chatBubbleWrap">
+            <VBox class="chatBubble">
+              <Text text="{chat>text}" class="chatText" />
+            </VBox>
+            <Text
+              text="{ path: 'chat>at', formatter: '.formatTime' }"
+              class="chatTime" />
+          </VBox>
+        </CustomListItem>
+      </List>
+
+      <HBox id="typingIndicator" visible="{chat>/busy}" class="chatTypingRow">
+        <VBox class="chatBubble chatTypingBubble">
+          <HBox class="chatDots">
+            <core:Icon src="sap-icon://circle-task-2" class="chatDot chatDot1" />
+            <core:Icon src="sap-icon://circle-task-2" class="chatDot chatDot2" />
+            <core:Icon src="sap-icon://circle-task-2" class="chatDot chatDot3" />
+          </HBox>
+          <Text
+            id="statusLine"
+            text="{chat>/status}"
+            visible="{= !!${chat>/status} }"
+            class="chatStatusText" />
+        </VBox>
+      </HBox>
+
+      <HBox visible="{chat>/pendingApproval}" class="chatApprovalRow">
+        <VBox class="chatApprovalCard">
+          <Text text="This action needs your approval." class="chatApprovalTitle" />
+          <HBox class="chatApprovalButtons">
+            <Button id="approveBtn" text="Approve" type="Accept" press=".onApprove" />
+            <Button id="rejectBtn" text="Reject" type="Reject" press=".onReject" class="sapUiTinyMarginBegin" />
+          </HBox>
+        </VBox>
+      </HBox>
+    </content>
+
+    <footer>
+      <Toolbar class="chatFooter">
+        <Input
+          id="promptInput"
+          width="100%"
+          placeholder="Ask the agent"
+          submit=".onSubmit"
+          enabled="{= !${chat>/busy} }" />
+        <Button
+          id="sendBtn"
+          text="Send"
+          type="Emphasized"
+          press=".onSend"
+          enabled="{= !${chat>/busy} }" />
+        <Button id="cancelBtn" text="Cancel" press=".onCancel" visible="{chat>/busy}" />
+      </Toolbar>
+    </footer>
+  </Page>
+</mvc:View>

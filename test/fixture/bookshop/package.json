@@ -1,0 +1,24 @@
+{
+  "name": "bookshop-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Consumer-shaped CAP project used by the plugin's service and E2E tests",
+  "dependencies": {
+    "@cap-js/agents": "0.9.1",
+    "@cap-js/sqlite": "^3",
+    "cap-agent-ui5-webui": "file:../../.."
+  },
+  "scripts": {
+    "start": "cds serve --in-memory"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      }
+    }
+  }
+}

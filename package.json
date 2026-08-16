@@ -1,29 +1,61 @@
 {
-  "name": "cap-agent-ui",
-  "version": "1.0.0",
-  "private": true,
+  "name": "cap-agent-ui5-webui",
+  "version": "0.1.0",
+  "description": "A CAP plugin that serves a UI5 chat client for @cap-js/agents A2A agents",
+  "license": "Apache-2.0",
+  "main": "cds-plugin.js",
+  "files": [
+    "cds-plugin.js",
+    "lib",
+    "dist",
+    "test-support",
+    "docs/templates",
+    "docs/agent-phases.md",
+    "docs/agent-card-phase-a.json",
+    "docs/agent-card-phase-b.json",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./cds-plugin.js",
+    "./cds-plugin": "./cds-plugin.js",
+    "./test-support/scripted-llm": "./test-support/scripted-llm.mjs",
+    "./package.json": "./package.json"
+  },
+  "workspaces": [
+    "test/fixture/bookshop"
+  ],
   "dependencies": {
-    "@cap-js/agents": "0.9.1",
-    "@cap-js/sqlite": "^3",
-    "@sap/cds": "^10"
+    "express": "^4.17.0 || ^5"
+  },
+  "peerDependencies": {
+    "@sap/cds": ">=8",
+    "@langchain/core": "^1"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "@cap-js/agents": "0.9.1",
     "@cap-js/cds-test": "^1",
+    "@cap-js/sqlite": "^3",
     "@langchain/core": "^1.2.8",
     "@playwright/test": "^1.62.1",
+    "@sap/cds": "^10",
     "@sapui5/types": "^1.151.0",
     "@ui5/cli": "^4.0.62",
-    "cds-plugin-ui5": "^0.17.4",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "ui5-tooling-transpile": "^3.12.0"
   },
   "scripts": {
-    "start": "cds-serve",
-    "test:unit": "node --import tsx --test test/unit/sse.test.ts test/unit/chatState.test.ts test/unit/A2AClient.test.ts",
-    "test:service": "node --test test/service/catalog.test.js",
+    "build": "cd ui && ui5 build --dest ../dist --clean-dest",
+    "start:fixture": "npm start --prefix test/fixture/bookshop",
+    "test:unit": "node --import tsx --test test/unit/sse.test.ts test/unit/chatState.test.ts test/unit/A2AClient.test.ts test/unit/scriptedLlm.test.mjs test/unit/config.test.ts test/unit/mount.test.mjs test/unit/discover.test.ts",
+    "test:service": "node --test test/fixture/bookshop/test/service/catalog.test.js",
     "test": "npm run test:unit && npm run test:service",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit -p app/chat/tsconfig.json"
+    "typecheck": "tsc --noEmit -p ui/tsconfig.json"
   }
 }

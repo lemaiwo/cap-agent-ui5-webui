@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit + fixture service tests
+        run: npm test
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - name: dist/ is committed and current
+        run: |
+          test -n "$(git ls-files dist)" || { echo "dist/ is not tracked — check .gitignore"; exit 1; }
+          npm run build
+          # `git diff` alone only reports changes to already-tracked files, so a
+          # build emitting a brand-new file under dist/ (a new controller, view,
+          # or asset) would leave it untracked and this check would pass anyway,
+          # silently shipping a package missing that file. `git add -A` first
+          # stages new/deleted files too, so the diff below sees everything.
+          git add -A -- dist
+          git diff --cached --exit-code -- dist || { echo "dist/ is stale — run npm run build and commit"; exit 1; }
+
+      # The repo uses npm workspaces, so every test above resolves the plugin
+      # through the hoisted root node_modules tree — never through what "npm pack"
+      # actually produces. That means none of them can catch a packaging error
+      # (a "files"/"exports" mistake that installs cleanly and then serves
+      # nothing, or can't be required at all). This step packs the real tarball,
+      # installs it into a throwaway directory the way a first-time consumer
+      # would, and asserts on its contents. See scripts/packaging-smoke-test.mjs.
+      - name: Packaging smoke test
+        run: |
+          set -e
+          pack_dir=$(mktemp -d)
+          npm pack --pack-destination "$pack_dir"
+          tarball=$(ls "$pack_dir"/*.tgz)
+
+          install_dir=$(mktemp -d)
+          cp scripts/packaging-smoke-test.mjs "$install_dir/check.mjs"
+
+          cd "$install_dir"
+          npm init -y >/dev/null
+          npm install "$tarball" --no-audit --no-fund
+          node check.mjs
