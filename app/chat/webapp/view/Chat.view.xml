@@ -4,7 +4,7 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns:core="sap.ui.core"
   displayBlock="true">
-  <Page id="page" title="{chat>/agentName}" class="chatPage">
+  <Page id="page" title="{chat>/agentName}" class="capAgentChat">
     <content>
       <List
         id="messageList"

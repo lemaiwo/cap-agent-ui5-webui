@@ -4,7 +4,15 @@
     <meta charset="utf-8" />
     <title>Catalog Agent Chat</title>
     <style>
-      /* Without this, <body> collapses to its content's natural height and
+      /* This height chain is deliberately page-level. It is safe here only
+         because this index.html is the plugin's own page shell — nothing
+         else shares this document — and not markup injected into a host
+         application's page. css/style.css deliberately carries no rules
+         targeting html, body, body > div, #container, or .sapUiView, so a
+         future "embed inside a host page" mode inherits none of this; this
+         block is the one place the height fix is allowed to live.
+
+         Without this, <body> collapses to its content's natural height and
          the data-height="100%" on the component container below has no
          sized ancestor to resolve against — UI5 still paints the app, but
          outside <body>'s own layout/hit-test box, so controls below the
