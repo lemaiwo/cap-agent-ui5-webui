@@ -2,14 +2,20 @@ import { BaseChatModel } from "@langchain/core/language_models/chat_models"
 import { AIMessage } from "@langchain/core/messages"
 
 // Fallback args for the `query` tool when schema introspection comes back
-// empty (see below). Determined empirically, not guessed: running with
-// AGENT_LLM unset (so @cap-js/agents' own MockChatModel builds the query
-// args) against a live server showed its CQN-mode introspection *also* comes
-// back empty here, so it falls through to CQL mode and calls the tool with
-// `{ cql: "SELECT * FROM Books LIMIT 3" }` — which succeeds and returns real
-// rows. That confirms both the query format this server's `query` tool
-// actually expects (CQL, not CQN) and the entity name ("Books"), independent
-// of whatever the schema getter returns.
+// empty (see below). Determined empirically, not guessed, by testing both
+// candidate shapes directly against the live tool's own schema validator
+// (temporarily hardcoding each, one at a time, under AGENT_LLM=scripted):
+//   - CQN shape `{ entity: "Books", limit: 3 }` is REJECTED outright by the
+//     tool's zod schema: "Invalid input: expected string, received
+//     undefined -> at cql" — i.e. this server's `query` tool schema has a
+//     required `cql` field, not `entity`/`limit`.
+//   - CQL shape `{ cql: "SELECT * FROM Books LIMIT 3" }` is ACCEPTED and
+//     returns real rows (Wuthering Heights / Jane Eyre / The Raven).
+// (A weaker, indirect signal pointed the same way first: running with
+// AGENT_LLM unset, so @cap-js/agents' own MockChatModel builds the query
+// call, also lands on this exact CQL shape once its own CQN introspection
+// comes back empty here — but the schema-validation result above is the
+// direct proof, not just an inference from the mock's behavior.)
 const FALLBACK_QUERY_ARGS = { cql: "SELECT * FROM Books LIMIT 3" }
 
 /**
