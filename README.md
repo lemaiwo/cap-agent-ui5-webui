@@ -234,6 +234,26 @@ Two things are worth knowing before you try it:
 The model comes from `@cap-js/agents`' own `[hybrid]` defaults — `anthropic--claude-4.6-sonnet`
 via the `aicore` kind — so the sample needs no LLM configuration of its own.
 
+#### Hybrid tests
+
+```bash
+npm run test:hybrid
+```
+
+Starts the sample in hybrid mode, runs `test/hybrid/` against the real model, and shuts the
+server down. **Not part of `npm test` and never run in CI** — no runner has a binding, and a
+suite that costs money per run has no business firing on every push. Expect roughly a minute.
+
+Without a binding or without `cds-dk` it **skips with an explanatory message and exits 0**,
+so a contributor who was never expected to run it does not see a red build.
+
+The assertions deliberately never check the model's wording, which differs every run. They
+check things that stay deterministic even when the prose does not: that the reply contains a
+title fetched independently from OData (the agent could only know it by calling a tool), that
+ordering reaches `input-required` **with stock unchanged**, that approving decrements stock by
+exactly the amount ordered, that rejecting does not, and that a follow-up turn reuses the
+`contextId` the server issued.
+
 Verified working end to end: asked for the cheapest book and the cost of three copies, the
 model queried the catalog and answered `$11.11 → $33.33`; ordering two copies paused at
 `input-required` with stock untouched, and approving it moved stock 12 → 10.
