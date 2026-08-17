@@ -9,7 +9,8 @@
     "cap-agent-ui5-webui": "file:../../.."
   },
   "scripts": {
-    "start": "cds-serve --in-memory"
+    "start": "cds-serve --in-memory",
+    "start:hybrid": "cds watch --profile hybrid"
   },
   "cds": {
     "requires": {

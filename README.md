@@ -234,6 +234,18 @@ Two things are worth knowing before you try it:
 The model comes from `@cap-js/agents`' own `[hybrid]` defaults — `anthropic--claude-4.6-sonnet`
 via the `aicore` kind — so the sample needs no LLM configuration of its own.
 
+To just start the server in hybrid mode, without the build-and-watch loop:
+
+```bash
+npm run start:fixture:hybrid     # the hybrid counterpart of npm run start:fixture
+```
+
+Note the asymmetry, which is forced by the tooling rather than chosen: `start:fixture`
+uses `cds-serve`, but the hybrid script uses **`cds watch --profile hybrid`**. `cds serve
+--profile hybrid` does *not* resolve the service binding — verified: it starts cleanly, then
+every model call fails with `Could not find service binding of type 'aicore'` and surfaces as
+*"content safety check is temporarily unavailable"*. Don't "simplify" it back to `serve`.
+
 #### Hybrid tests
 
 ```bash
