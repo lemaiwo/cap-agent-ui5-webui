@@ -40,6 +40,9 @@ const isWindows = process.platform === "win32"
 const npm = "npm"
 const npx = "npx"
 
+/** `npm run dev:hybrid` passes --hybrid: run against a real LLM on SAP AI Core. */
+const hybrid = process.argv.includes("--hybrid")
+
 let server
 let building = false
 let queued = false
@@ -80,14 +83,41 @@ async function build(reason) {
 }
 
 function startServer() {
-  console.log("[dev] starting sample: test/fixture/bookshop (AGENT_LLM=scripted)")
-  // `cds-serve` is the binary @sap/cds ships; the bare `cds` CLI comes from
-  // @sap/cds-dk, which this repo does not depend on.
-  server = spawn(npx, ["cds-serve", "--in-memory"], {
+  // Hybrid runs the sample against a real LLM on SAP AI Core instead of a local
+  // stand-in. AGENT_LLM is deliberately NOT set here: the scripted double
+  // registers a buildModel handler that would shadow the real model, so hybrid
+  // would silently keep using regex matching and look like it was reasoning.
+  const env = { ...process.env }
+  let cmd
+  let args
+
+  if (hybrid) {
+    // Hybrid needs `cds watch --profile hybrid` from @sap/cds-dk, not the
+    // `cds-serve` binary @sap/cds ships. Verified: `cds bind` records only a
+    // *reference* to the CF instance and key, and resolving it into the
+    // VCAP_SERVICES the SAP AI SDK reads is something cds-dk does at startup.
+    // Under cds-serve the SDK logs "Could not find service binding of type
+    // 'aicore'" and every call fails with a misleading content-filter error.
+    delete env.AGENT_LLM // the scripted double would shadow the real model
+    cmd = npx
+    args = ["cds", "watch", "--profile", "hybrid"]
+    console.log("[dev] starting sample in HYBRID mode - real LLM via SAP AI Core")
+    console.log("[dev] needs @sap/cds-dk and a binding: cds bind -2 <instance>:<key>")
+  } else {
+    env.AGENT_LLM = "scripted"
+    cmd = npx
+    // `cds-serve` is the binary @sap/cds ships; the bare `cds` CLI comes from
+    // @sap/cds-dk, which this repo deliberately does not depend on, so normal
+    // development needs no global toolchain.
+    args = ["cds-serve", "--in-memory"]
+    console.log("[dev] starting sample: test/fixture/bookshop (AGENT_LLM=scripted)")
+  }
+
+  server = spawn(cmd, args, {
     cwd: fixtureDir,
     stdio: "inherit",
     shell: isWindows,
-    env: { ...process.env, AGENT_LLM: "scripted" },
+    env,
   })
   server.on("error", (err) => {
     console.error(`[dev] could not start the sample server: ${err.message}`)
@@ -97,6 +127,10 @@ function startServer() {
     // Only meaningful if the server dies on its own; Ctrl-C is handled below.
     if (code !== null && code !== 0) {
       console.error(`\n[dev] sample server exited with ${code} - is port 4004 already in use?`)
+      if (hybrid) {
+        console.error("[dev] hybrid also needs @sap/cds-dk on PATH (npm i -g @sap/cds-dk)")
+        console.error("[dev] and a binding: cd test/fixture/bookshop && cds bind -2 <instance>:<key>")
+      }
     }
     process.exit(code ?? 0)
   })

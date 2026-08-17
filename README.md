@@ -198,6 +198,46 @@ suite use, rather than transpiling `ui/` sources on the fly. That costs a few se
 rebuild and buys fidelity: a `Component.ts` bootstrap bug once hid from every check in
 this repo precisely because nothing had loaded the built output in a browser.
 
+### Hybrid testing: the sample against a real LLM
+
+`npm run dev` uses a deterministic stand-in for an LLM. To run the sample against a **real
+model on SAP AI Core** — which is the only way to see the agent actually reason, rather
+than match a regex — use hybrid mode.
+
+```bash
+npm run dev:hybrid
+```
+
+One-time setup, in `test/fixture/bookshop`:
+
+```bash
+cf login                                  # the subaccount holding your AI Core instance
+cds bind -2 <instance>:<service-key>      # e.g. cds bind -2 aicore:aicore-key
+```
+
+`cds bind` writes `.cdsrc-private.json`. **That file holds live service credentials and is
+gitignored** — keep it that way.
+
+Two things are worth knowing before you try it:
+
+- **Hybrid needs [`@sap/cds-dk`](https://www.npmjs.com/package/@sap/cds-dk) installed
+  (`npm i -g @sap/cds-dk`); normal `npm run dev` does not.** `cds bind` records only a
+  *reference* to the CF instance and key, and resolving that into the `VCAP_SERVICES` the
+  SAP AI SDK reads happens at startup in `cds watch`, which ships with cds-dk. Started any
+  other way, the SDK logs `Could not find service binding of type 'aicore'` and every call
+  then fails with a misleading *"content safety check is temporarily unavailable"* — the
+  filter cannot reach AI Core either.
+- **`AGENT_LLM` is deliberately unset in hybrid.** The scripted test double registers a
+  `buildModel` handler that would shadow the real model, and the agent would keep matching
+  regexes while looking like it was reasoning.
+
+The model comes from `@cap-js/agents`' own `[hybrid]` defaults — `anthropic--claude-4.6-sonnet`
+via the `aicore` kind — so the sample needs no LLM configuration of its own.
+
+Verified working end to end: asked for the cheapest book and the cost of three copies, the
+model queried the catalog and answered `$11.11 → $33.33`; ordering two copies paused at
+`input-required` with stock untouched, and approving it moved stock 12 → 10.
+
 ### Other commands
 
 - **`npm run build`** — runs the UI5 build (`ui5-tooling-transpile-task`) from `ui/`
