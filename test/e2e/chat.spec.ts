@@ -151,3 +151,18 @@ test("offers a picker when several agents exist and switching resets the convers
   await page.getByRole("option").nth(1).click()
   await expect(userRow).toHaveCount(0) // conversation reset
 })
+
+test("the chat UI is listed on the CDS welcome page", async ({ request }) => {
+  // CAP builds its "Web Applications" list by scanning the consumer's app/
+  // folder for *.html, which can never find a UI that ships inside the
+  // plugin's own dist/. The plugin adds itself via cds.app._app_links; without
+  // that it works but is undiscoverable, which is how it went unnoticed.
+  const res = await request.get("/")
+  expect(res.ok()).toBeTruthy()
+  const html = await res.text()
+  expect(html).toContain('href="/chat/index.html"')
+
+  // And the advertised link must actually resolve, not just be printed.
+  const app = await request.get("/chat/index.html")
+  expect(app.ok()).toBeTruthy()
+})

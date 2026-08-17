@@ -20,7 +20,21 @@ cds.on("bootstrap", async (app) => {
   // Order matters: the index handler must be registered before the static
   // handler, or express.static answers "/" first and the override is dead code.
   mountIndex(app, config.mountPath, config.bootstrapUrl, LOG)
-  mountUi(app, config.mountPath, LOG)
+  const mounted = mountUi(app, config.mountPath, LOG)
+
+  // List the chat UI under "Web Applications" on the CDS welcome page.
+  //
+  // CAP builds that list by scanning cds.env.folders.app for *.html
+  // (@sap/cds/app/index.js -> _app_links), which can never find us: the UI ships
+  // inside this package's dist/, not in the consumer's app/ folder. The same
+  // function concatenates cds.app._app_links, which exists precisely so
+  // something serving its own assets can add itself.
+  //
+  // Only when the UI actually mounted - advertising a link to a missing dist/
+  // would be worse than showing nothing.
+  if (mounted) {
+    ;(cds.app._app_links ??= []).push(`${config.mountPath}/index.html`)
+  }
 
   // Registered here, at bootstrap, but filled below on "served" — Express
   // resolves routes at request time, so this closure over `agents` sees
