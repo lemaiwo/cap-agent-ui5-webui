@@ -59,6 +59,7 @@
     "test:service": "node --test test/fixture/bookshop/test/service/catalog.test.js",
     "test": "npm run test:unit && npm run test:service",
     "test:e2e": "playwright test",
+    "test:hybrid": "node scripts/hybrid-test.mjs",
     "typecheck": "tsc --noEmit -p ui/tsconfig.json"
   },
   "repository": {
