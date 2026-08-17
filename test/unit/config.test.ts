@@ -116,3 +116,26 @@ test("a usable config carries no warnings", () => {
   assert.deepEqual(resolveConfig({ "cap-agent-ui5-webui": { mountPath: "ui" } }).warnings, [])
   assert.deepEqual(resolveConfig({ "cap-agent-ui5-webui": false }).warnings, [])
 })
+
+test("serveUi defaults to true, so the plugin serves the UI unless told otherwise", () => {
+  assert.equal(resolveConfig({}).serveUi, true)
+  assert.equal(resolveConfig({ "cap-agent-ui5-webui": true }).serveUi, true)
+})
+
+// serveUi:false is the HTML5 Application Repository mode: the approuter serves
+// the UI from the repository, and the CDS server serves only agents.json.
+// mountPath must survive, because that is where agents.json still lives and
+// what the generated xs-app.json routes to.
+test("serveUi:false is accepted as config, not reported as an unknown key", () => {
+  const c = resolveConfig({ "cap-agent-ui5-webui": { serveUi: false } })
+  assert.equal(c.serveUi, false)
+  assert.equal(c.enabled, true)
+  assert.equal(c.mountPath, "/chat")
+  assert.deepEqual(c.warnings, [])
+})
+
+test("serveUi:false still honours a custom mountPath", () => {
+  const c = resolveConfig({ "cap-agent-ui5-webui": { serveUi: false, mountPath: "assistant" } })
+  assert.equal(c.mountPath, "/assistant")
+  assert.equal(c.serveUi, false)
+})

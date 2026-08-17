@@ -49,13 +49,14 @@ Zero-config by default. Override under `cds["cap-agent-ui5-webui"]` in `package.
       "mountPath": "/chat",          // default "/chat"
       "enabled": true,               // default true
       "bootstrapUrl": null,          // default null (use the SAPUI5 CDN)
+      "serveUi": true,               // default true; false = HTML5 repo mode
       "agents": ["CatalogService"]   // default: all @agent services, in model order
     }
   }
 }
 ```
 
-All four keys are optional and independent:
+All five keys are optional and independent:
 
 - **`mountPath`** — where the UI and `agents.json` are served. Must start with `/`
   (a bare value is prefixed automatically). **`"/"` and `""` are refused** and fall back
@@ -68,6 +69,10 @@ All four keys are optional and independent:
   you want the dependency present but the UI off). Equivalent to the shorthand
   `"cap-agent-ui5-webui": false`.
 - **`bootstrapUrl`** — overrides the SAPUI5 bootstrap URL. See below.
+- **`serveUi`** — set to `false` to stop serving the UI from the CDS server, because you
+  deploy it to the HTML5 Application Repository instead. `<mountPath>/agents.json` stays
+  mounted: it is generated at runtime from the services carrying `@agent`, so no static
+  artifact can stand in for it. See [HTML5 Application Repository](#html5-application-repository).
 - **`agents`** — an allow-list of service names, in the order you want them offered. If
   omitted, every `@agent`-annotated service is offered, in model order.
 
@@ -162,6 +167,70 @@ static assets and `<mountPath>/agents.json` are served ahead of CAP's auth middl
 (the plugin registers its routes on the raw Express `app` at bootstrap, before `cds.serve`
 mounts service-level auth) and are readable without a session — `agents.json` in
 particular enumerates your agent services' names, descriptions and mounted paths.
+
+## HTML5 Application Repository
+
+The default above is the whole point of this plugin: no repository, no approuter content
+module, nothing to build. The UI is ~20 KB and SAPUI5 comes from the CDN, so serving it
+from your CDS server costs approximately nothing.
+
+Use the repository instead when you need what only it provides — chiefly **SAP Build Work
+Zone**, which can only surface apps that live there, and the Fiori shell around them. It
+also keeps the UI off your `srv` route entirely, which closes the anonymous `agents.json`
+read described above.
+
+```bash
+npx cap-agent-ui5-webui html5 app/chat-ui/dist
+```
+
+That writes the prebuilt UI, an `xs-app.json`, and a deployable `<appId>.zip` into that
+directory, and prints the approuter routes you need. Then set `serveUi: false` so the UI
+is not also served from the CDS server:
+
+```jsonc
+{ "cds": { "[production]": { "cap-agent-ui5-webui": { "serveUi": false } } } }
+```
+
+Scoping it to `[production]` keeps `cds watch` exactly as it was — locally there is no
+repository to serve from.
+
+### What this does not remove
+
+`agents.json` still comes from the CDS server. It is generated at runtime by discovering
+which of your services carry `@agent`, so the repository — which stores static files —
+cannot produce it. The UI fetches it *relative* to its own page, which after deployment
+means `/<appId>/agents.json`, so that one path has to be routed back to your service.
+Both generated configs do this for you.
+
+### The service name is `html5-apps-repo-rt`, in both files
+
+This one costs an afternoon. Countless examples write
+`"service": "html5-apps-repo"`, and that is fine under the **managed** approuter, which
+skips the validation entirely. A **standalone** approuter — what a CAP MTA usually has —
+validates its own `xs-app.json` at startup and the app's fetched `xs-app.json` on every
+request, resolving that name against a bound service. With `html5-apps-repo` you get
+
+```
+A route requires access to html5-apps-repo service but the service is not bound.
+```
+
+as a boot crash from the router's own file, or as a request-time **500** from the app's
+file — while `cf services` shows the `app-runtime` instance bound perfectly well. The
+name it wants is the bound service's runtime name, `html5-apps-repo-rt`. Both configs
+this command generates already use it.
+
+### MTA wiring
+
+You need an `app-host` instance (where content is uploaded), an `app-runtime` instance
+**bound to your approuter** (which lets it serve that content), an `html5` module whose
+`build-result` points at the generated folder, and a `com.sap.application.content` module
+referencing `<appId>.zip`. A worked example is in
+[the sample repo](https://github.com/lemaiwo/cap-agent-ui5-webui-sample).
+
+Two things that fail quietly there: `build-result` must name the folder holding the
+archive, or mbt copies nothing and the repository rejects the upload with *"Could not find
+applications in the request"*; and mbt only **copies** an archive, it never creates one —
+which is why this command writes the `.zip` itself.
 
 ## `dist/` ships TypeScript sources — deliberately
 

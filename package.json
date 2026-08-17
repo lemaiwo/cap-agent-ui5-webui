@@ -1,11 +1,15 @@
 {
   "name": "cap-agent-ui5-webui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A CAP plugin that serves a UI5 chat client for @cap-js/agents A2A agents",
   "license": "Apache-2.0",
   "main": "cds-plugin.js",
+  "bin": {
+    "cap-agent-ui5-webui": "bin/cap-agent-ui5-webui.mjs"
+  },
   "files": [
     "cds-plugin.js",
+    "bin",
     "lib",
     "dist",
     "test-support",
@@ -56,7 +60,7 @@
     "dev:hybrid": "node scripts/dev.mjs --hybrid",
     "start:fixture": "npm start --prefix test/fixture/bookshop",
     "start:fixture:hybrid": "npm run start:hybrid --prefix test/fixture/bookshop",
-    "test:unit": "node --import tsx --test test/unit/sse.test.ts test/unit/chatState.test.ts test/unit/A2AClient.test.ts test/unit/scriptedLlm.test.mjs test/unit/config.test.ts test/unit/mount.test.mjs test/unit/discover.test.ts",
+    "test:unit": "node --import tsx --test test/unit/sse.test.ts test/unit/chatState.test.ts test/unit/A2AClient.test.ts test/unit/scriptedLlm.test.mjs test/unit/config.test.ts test/unit/mount.test.mjs test/unit/html5.test.mjs test/unit/zip.test.mjs test/unit/discover.test.ts",
     "test:service": "node --test test/fixture/bookshop/test/service/catalog.test.js",
     "test": "npm run test:unit && npm run test:service",
     "test:e2e": "playwright test",

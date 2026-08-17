@@ -17,10 +17,23 @@ cds.on("bootstrap", async (app) => {
     return
   }
 
-  // Order matters: the index handler must be registered before the static
-  // handler, or express.static answers "/" first and the override is dead code.
-  mountIndex(app, config.mountPath, config.bootstrapUrl, LOG)
-  const mounted = mountUi(app, config.mountPath, LOG)
+  // serveUi:false means the UI is deployed to the HTML5 Application Repository
+  // and the approuter delivers it from there. Only agents.json is mounted
+  // below - it is generated at runtime from the services carrying @agent, so
+  // no static artifact can stand in for it. Serving the UI here too would put
+  // a second, stale copy on a public srv route.
+  let mounted = false
+  if (config.serveUi) {
+    // Order matters: the index handler must be registered before the static
+    // handler, or express.static answers "/" first and the override is dead code.
+    mountIndex(app, config.mountPath, config.bootstrapUrl, LOG)
+    mounted = mountUi(app, config.mountPath, LOG)
+  } else {
+    LOG.info(
+      `cap-agent-ui5-webui: serveUi:false — chat UI not served from the CDS server; ` +
+        `only ${config.mountPath}/agents.json is mounted`,
+    )
+  }
 
   // List the chat UI under "Web Applications" on the CDS welcome page.
   //
