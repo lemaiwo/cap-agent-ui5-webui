@@ -1,5 +1,7 @@
 # cap-agent-ui5-webui
 
+[![npm](https://img.shields.io/npm/v/cap-agent-ui5-webui)](https://www.npmjs.com/package/cap-agent-ui5-webui)
+
 A [SAP CAP](https://cap.cloud.sap/) plugin that gives any CAP project a working
 [A2A protocol](https://a2a-protocol.org/) chat UI by installing it — no wiring, no
 copying files, no approuter changes. It serves a freestyle SAPUI5 TypeScript chat
@@ -11,6 +13,12 @@ writing, and its own README marks areas such as connectivity and content filteri
 experimental. This plugin inherits that instability; expect breakage on upgrade.
 
 ## Install
+
+```bash
+npm add cap-agent-ui5-webui
+```
+
+Installing straight from the repository also works, if you want an unreleased commit:
 
 ```bash
 npm add github:lemaiwo/cap-agent-ui5-webui
@@ -324,16 +332,17 @@ To cut a release:
    than publishing a version nobody can correlate with a release.
 3. Publish the release. The workflow does the rest.
 
-### One-time setup before the first release
+### One-time setup
 
-Trusted publishing requires the package to already exist on npm, so the very first
-publish cannot come from this workflow:
+`0.1.0` was published manually, because trusted publishing requires the package to already
+exist on npm — so that step is done. What remains, once, before the workflow can publish:
 
-1. Publish once from your machine: `npm publish --access public`. The `prepublishOnly`
-   script builds `dist/` first, so a manual publish cannot ship stale output either.
-2. On npmjs.com, open the package's **Settings → Trusted Publisher** and add this
-   repository with workflow `publish.yml`.
-3. From then on, every release publishes itself with no token.
+On npmjs.com, open the package's **Settings → Trusted Publisher** and add this repository
+with workflow `publish.yml`. Until that is configured, a GitHub Release will run the
+workflow and fail at the publish step with an authentication error.
+
+After that, releases publish themselves with no token and no 2FA prompt — OIDC replaces
+both.
 
 ## Markdown agent templates
 
