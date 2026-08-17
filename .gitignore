@@ -7,3 +7,9 @@ playwright-report/
 # dist/ is deliberately NOT ignored: it is the plugin's published payload.
 # The consumer installs prebuilt output; without it the plugin serves nothing.
 .superpowers/
+
+# Credentials written by `cds bind` and CAP tooling. These contain live service
+# keys for real BTP instances - they must never be committed.
+.cdsrc-private.json
+default-env.json
+*.pem
